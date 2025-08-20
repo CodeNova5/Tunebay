@@ -71,7 +71,7 @@ export default function HomePage() {
                             {songs.map((song, idx) => (
                                 <Link
                                     key={idx}
-                                    href={`/music/${getFirstArtist(song.artist)}/song/${song.title}`}
+                                    href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
                                 >
                                     <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
                                         <img
