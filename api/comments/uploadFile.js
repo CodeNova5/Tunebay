@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
         const owner = "CodeNova5";
         const repo = "Music-Backend";
-        const path = `public/music/${artistName}/${uploadedFileName}`;
+        const path = `public/music/${encodeURIComponent(artistName)}/${uploadedFileName}`;
 
         let sha;
         try {
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           message: "File uploaded successfully",
           data: response.data,
-          path: `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${artistName}/${uploadedFileName}`,
+          path: `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${encodeURIComponent(artistName)}/${uploadedFileName}`,
         });
       }
       if (type === "commentFile") {
