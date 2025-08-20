@@ -44,8 +44,7 @@ export default async function handler(req, res) {
         const owner = "CodeNova5";
         const repo = "Music-Backend";
         const safeArtistName = encodeURIComponent(artistName);
-        const safeFileName = encodeURIComponent(uploadedFileName);
-        const path = `public/music/${safeArtistName}/${safeFileName}`;
+        const path = `public/music/${safeArtistName}/${uploadedFileName}`;
         let sha;
         try {
           const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
