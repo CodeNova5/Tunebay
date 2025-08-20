@@ -8,7 +8,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const { artist, song } = params;
 
   // Use absolute URL for server-side fetch
-  const baseUrl = "https://next-xi-opal.vercel.app"; // fallback to your production domain
+  const baseUrl = "https://tunebay.vercel.app"; // fallback to your production domain
 
   const apiUrl = `${baseUrl}/api/Music/route?type=songDetails&artistName=${encodeURIComponent(
     artist

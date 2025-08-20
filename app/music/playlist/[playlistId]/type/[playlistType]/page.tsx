@@ -6,7 +6,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const params = typeof props.params?.then === "function" ? await props.params : props.params;
   const { playlistId, playlistType } = params;
 
-  const baseUrl = "https://next-xi-opal.vercel.app";
+  const baseUrl = "https://tunebay.vercel.app";
   const apiUrl = `${baseUrl}/api/Music/route?type=playlist&playlistId=${playlistId}&playlistType=${playlistType}`;
 
   const res = await fetch(apiUrl, { cache: "no-store" });
