@@ -227,8 +227,7 @@ export default function SongPage() {
     async function checkGithubFileExists(fileName: string): Promise<string | null> {
         const artistName = track?.artists[0]?.name || "Unknown Artist";
         const safeArtistName = encodeURIComponent(artistName);
-        const safeFileName = encodeURIComponent(fileName);
-        const githubRawUrl = `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${safeArtistName}/${safeFileName}`;
+        const githubRawUrl = `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${safeArtistName}/${encodeURIComponent(fileName)}`;
         try {
             const res = await fetch(githubRawUrl, { method: "HEAD" });
             if (res.ok) {
