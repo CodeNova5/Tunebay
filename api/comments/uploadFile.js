@@ -68,7 +68,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           message: "File uploaded successfully",
           data: response.data,
-          path: `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${artistName}/${uploadedFileName}`,
+          path: `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${safeArtistName}/${safeFileName}`,
         });
       }
       if (type === "commentFile") {
