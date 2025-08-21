@@ -194,6 +194,10 @@ export default function SongPage() {
                 console.error("Error fetching related tracks:", err);
             }
         }
+        if (artist && song) {
+            fetchRelatedTracks();
+        }
+
     }, [artist, song]);
     
     // Fetch songs
