@@ -69,7 +69,10 @@ export default function LoginPage() {
   };
 
   const saveUserInfo = (data: any) => {
-    localStorage.setItem('userInfo', JSON.stringify(data));
+    localStorage.setItem('userInfo', JSON.stringify({
+      data,
+      provider: "google"
+    }));
   };
 
   return (
