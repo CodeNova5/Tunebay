@@ -302,27 +302,56 @@ export default async function handler(req, res) {
 
     else if (type === "lyrics") {
       if (!artistName || !songName) {
-        return res.status(400).json({ error: "Missing artist name or song name" });
+      return res.status(400).json({ error: "Missing artist name or song name" });
       }
 
       try {
-        const lyricsApiUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(decodedArtistName)}/${encodeURIComponent(decodedSongName)}`;
-        const response = await fetch(lyricsApiUrl);
+      const lyricsApiUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(decodedArtistName)}/${encodeURIComponent(decodedSongName)}`;
+      let response = await fetch(lyricsApiUrl);
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch lyrics");
-        }
-
-        const data = await response.json();
-        if (!data.lyrics) {
-          return res.status(404).json({ error: "Lyrics not found" });
-        }
-
+      let data = await response.json();
+      if (response.ok && data.lyrics) {
         res.setHeader('Cache-Control', 'max-age=31536000, immutable');
         return res.status(200).json({ lyrics: data.lyrics });
+      }
+
+      // If lyrics.ovh fails, try Genius API
+      const geniusAccessToken = process.env.GENIUS_ACCESS_TOKEN;
+      const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(decodedArtistName + " " + decodedSongName)}`;
+      const geniusResponse = await fetch(searchUrl, {
+        headers: {
+        Authorization: `Bearer ${geniusAccessToken}`,
+        },
+      });
+
+      if (!geniusResponse.ok) {
+        throw new Error("Failed to search Genius");
+      }
+
+      const geniusData = await geniusResponse.json();
+      const hit = geniusData.response.hits?.[0]?.result;
+      if (!hit || !hit.url) {
+        return res.status(404).json({ error: "Lyrics not found" });
+      }
+
+      // Scrape lyrics from Genius page (since API does not provide lyrics directly)
+      const pageRes = await fetch(hit.url);
+      const pageHtml = await pageRes.text();
+      // Extract lyrics from HTML (simple regex, may not be perfect)
+      const lyricsMatch = pageHtml.match(/<div[^>]+data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
+      let lyrics = "";
+      if (lyricsMatch) {
+        lyrics = lyricsMatch.map(div => div.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#x27;/g, "'")).join('\n').trim();
+      }
+      if (!lyrics) {
+        return res.status(404).json({ error: "Lyrics not found" });
+      }
+
+      res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+      return res.status(200).json({ lyrics });
       } catch (err) {
-        console.error("Lyrics API Error:", err);
-        return res.status(500).json({ error: "Failed to fetch lyrics" });
+      console.error("Lyrics API Error:", err);
+      return res.status(500).json({ error: "Failed to fetch lyrics" });
       }
     }
 
