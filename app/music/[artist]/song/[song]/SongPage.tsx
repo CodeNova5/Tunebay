@@ -677,7 +677,7 @@ export default function SongPage() {
                                 padding: "10px",
                             }}
                         >
-                            <Link href={`/music/${encodeURIComponent(song.artist)}/${encodeURIComponent(song.name)}`}>
+                            <Link href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.name)}`}>
                                 <a style={{ textDecoration: "none", color: "inherit" }}>
                                     <img
                                         src={song.image || "/placeholder.jpg"}
