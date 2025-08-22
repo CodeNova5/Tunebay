@@ -390,85 +390,56 @@ export default async function handler(req, res) {
     }
 
     else if (type === "relatedTracks") {
+  if (!artistName || !songName) {
+    return res.status(400).json({ error: "Missing artist name or song name" });
+  }
 
-      if (!artistName || !songName) {
-        return res.status(400).json({ error: "Missing artist name or song name" });
-      }
+  try {
+    const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
+      decodedArtistName
+    )}&track=${encodeURIComponent(decodedSongName)}&limit=15&api_key=${LAST_FM_API_KEY}&format=json`;
 
-      try {
-        const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
-          decodedArtistName
-        )}&track=${encodeURIComponent(decodedSongName)}&limit=15`;
+    const response = await fetch(apiUrl);
 
-        const { response, data } = await fetchWithLastFmKeys(
-          apiUrl,
-          () => LAST_FM_API_KEY,
-          () => LAST_FM_API_KEY2
-        );
-
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch related tracks");
-        }
-
-
-
-        let tracks = data.similartracks?.track;
-        if (!tracks) {
-          return res.status(404).json({ error: "No related tracks found" });
-        }
-        // Normalize to array if only one track is returned as an object
-        if (!Array.isArray(tracks)) {
-          tracks = [tracks];
-        }
-        if (!tracks.length) {
-          return res.status(404).json({ error: "No related tracks found" });
-        }
-
-        // Fetch album images for each related track using Last.fm's track.getInfo API
-        const relatedTracks = await Promise.all(
-          tracks.map(async (track) => {
-            const trackInfoUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(
-              track.artist.name
-            )}&track=${encodeURIComponent(track.name)}`;
-
-            try {
-              const trackInfoResponse = await fetchWithLastFmKeys(
-                trackInfoUrl,
-                () => LAST_FM_API_KEY,
-                () => LAST_FM_API_KEY2
-              );
-
-              const trackInfoData = await trackInfoResponse.json();
-
-              const albumImage =
-                trackInfoData.track?.album?.image?.find((img) => img.size === "large")?.["#text"] || null;
-
-              return {
-                name: track.name,
-                artist: track.artist.name,
-                url: track.url,
-                image: albumImage || "/placeholder.jpg", // Use album image or fallback to placeholder
-              };
-            } catch (err) {
-              console.error(`Failed to fetch album image for ${track.name}:`, err);
-              return {
-                name: track.name,
-                artist: track.artist.name,
-                url: track.url,
-                image: "/placeholder.jpg", // Fallback to placeholder if fetching fails
-              };
-            }
-          })
-        );
-
-        res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
-        return res.status(200).json(relatedTracks);
-      } catch (err) {
-        console.error("Last.fm API Error:", err);
-        return res.status(500).json({ error: "Failed to fetch related tracks" });
-      }
+    if (!response.ok) {
+      throw new Error("Failed to fetch related tracks");
     }
+
+    const data = await response.json();
+    let tracks = data.similartracks?.track;
+
+    if (!tracks) {
+      return res.status(404).json({ error: "No related tracks found" });
+    }
+
+    if (!Array.isArray(tracks)) {
+      tracks = [tracks]; // normalize
+    }
+
+    if (!tracks.length) {
+      return res.status(404).json({ error: "No related tracks found" });
+    }
+
+    // Just map directly from track.getsimilar results
+    const relatedTracks = tracks.map((track) => ({
+      name: track.name,
+      artist: track.artist.name,
+      url: track.url,
+      image:
+        track.image?.find((img) => img.size === "large")?.["#text"] ||
+        "/placeholder.jpg", // use image from getSimilar or fallback
+    }));
+
+    res.setHeader(
+      "Cache-Control",
+      "s-maxage=2419200, stale-while-revalidate"
+    );
+    return res.status(200).json(relatedTracks);
+  } catch (err) {
+    console.error("Last.fm API Error:", err);
+    return res.status(500).json({ error: "Failed to fetch related tracks" });
+  }
+}
 
     // Artist details endpoints 
     else if (type === "artistDetails") {
