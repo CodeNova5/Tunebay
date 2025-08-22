@@ -670,17 +670,22 @@ export default function SongPage() {
                         <div
                             key={index}
                             style={{
-                                minWidth: "200px",
-                                textAlign: "center",
-                                border: "1px solid #ddd",
-                                borderRadius: "8px",
-                                padding: "10px",
-                            }}
+                              minWidth: "120px",
+                            maxWidth: "120px",
+                            background: "#232323",
+                            textAlign: "center",
+                            border: "1px solid #222",
+                            borderRadius: "10px",
+                            padding: "10px 8px",
+                            boxSizing: "border-box",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+                            transition: "transform 0.15s",
+                         }}
                         >
                             <Link href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.name)}`}>
                                 <a style={{ textDecoration: "none", color: "inherit" }}>
                                     <img
-                                        src={song.image || "/placeholder.jpg"}
+                                        src={"/placeholder.jpg"}
                                         alt={song.name}
                                         style={{ width: "100%", borderRadius: "8px" }}
                                     />
