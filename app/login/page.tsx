@@ -15,40 +15,47 @@ export default function LoginPage() {
   const [userInfo, setUserInfo] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/Music/route?type=clientId')
-      .then(res => res.json())
-      .then(data => setGoogleClientId(data.clientId));
+  fetch('/api/Music/route?type=clientId')
+    .then(res => res.json())
+    .then(data => setGoogleClientId(data.clientId));
 
-    const googleScript = document.createElement('script');
-    googleScript.src = 'https://accounts.google.com/gsi/client';
-    googleScript.async = true;
-    googleScript.defer = true;
-    document.body.appendChild(googleScript);
+  const googleScript = document.createElement('script');
+  googleScript.src = 'https://accounts.google.com/gsi/client';
+  googleScript.async = true;
+  googleScript.defer = true;
+  document.body.appendChild(googleScript);
 
-    window.handleCredentialResponse = (response: any) => {
-      if (response.credential) {
-        const data = parseJwt(response.credential);
-        saveUserInfo(data);
-        setUserInfo(data);
-        setTimeout(() => {
-          router.back();
-        }
-        , 1000);
-      } else {
-        console.error("Error: No Google credential received.");
-      }
-    };
+  window.handleCredentialResponse = (response: any) => {
+    if (response.credential) {
+      const data = parseJwt(response.credential);
+      saveUserInfo(data);
+      setUserInfo(data);
+      setTimeout(() => {
+        router.back();
+      }, 1000);
+    } else {
+      console.error("Error: No Google credential received.");
+    }
+  };
 
-    window.onload = () => {
-      if (googleClientId && window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: window.handleCredentialResponse,
-          cancel_on_tap_outside: false,
-        });
-        window.google.accounts.id.prompt();
-      }
-    };
+  const stored = localStorage.getItem('userInfo');
+  if (stored) {
+    setUserInfo(JSON.parse(stored));
+  }
+}, []);
+
+useEffect(() => {
+  if (googleClientId && window.google?.accounts?.id) {
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: window.handleCredentialResponse,
+      cancel_on_tap_outside: false,
+    });
+
+    // 👇 This is what triggers the One Tap prompt
+    window.google.accounts.id.prompt();
+  }
+}, [googleClientId]);
 
     const stored = localStorage.getItem('userInfo');
     if (stored) {
