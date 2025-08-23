@@ -11,6 +11,13 @@ import 'react-h5-audio-player/lib/styles.css';
 import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 
+declare global {
+    interface Window {
+        google: any;
+        handleCredentialResponse?: (response: any) => void;
+    }
+}
+
 interface Track {
     name: string;
     artists: { name: string }[];
@@ -39,63 +46,73 @@ export default function SongPage() {
     const [relatedSongs, setRelatedSongs] = React.useState<any[]>([]);
     const router = useRouter();
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
+    const [userInfo, setUserInfo] = React.useState<any>(null);
 
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
-          .then(res => res.json())
-          .then(data => setGoogleClientId(data.clientId));
-      }, []);
+            .then(res => res.json())
+            .then(data => setGoogleClientId(data.clientId));
+    }, []);
 
-    // Google/Facebook scripts (browser-only)
     React.useEffect(() => {
-        // Google script
         if (!googleClientId) return;
+
+        // Add Google script
         const googleScript = document.createElement('script');
         googleScript.src = 'https://accounts.google.com/gsi/client';
         googleScript.async = true;
         googleScript.defer = true;
         document.body.appendChild(googleScript);
 
-        window.handleCredentialResponse = (response: any) => {
-            if (response.credential) {
-                const data = parseJwt(response.credential);
-                saveUserInfo('google', data);
-            } else {
-                console.error("Error: No Google credential received.");
-            }
-        };
-
-        window.onload = () => {
-            const userInfo = localStorage.getItem('userInfo');
-            if (!userInfo) {
-                window.google?.accounts.id.initialize({
+        googleScript.onload = () => {
+            if (window.google && window.google.accounts && window.google.accounts.id) {
+                window.google.accounts.id.initialize({
                     client_id: googleClientId,
-                    callback: window.handleCredentialResponse,
+                    callback: handleCredentialResponse,
                     cancel_on_tap_outside: false,
+                    auto_select: true,
                 });
-                window.google?.accounts.id.prompt();
+                window.google.accounts.id.prompt();
             }
         };
 
-        function saveUserInfo(provider: string, data: any) {
-            localStorage.setItem('userInfo', JSON.stringify({ provider, data }));
-        }
-        function parseJwt(token: string) {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-                atob(base64)
-                    .split('')
-                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                    .join('')
-            );
-            return JSON.parse(jsonPayload);
-        }
-
+        // Cleanup
         return () => {
             document.body.removeChild(googleScript);
         };
-    }, []);
+    }, [googleClientId]);
+
+    function handleCredentialResponse(response: any) {
+        if (response.credential) {
+            const data = parseJwt(response.credential);
+            saveUserInfo(data);
+            setUserInfo(data);
+            setTimeout(() => {
+                router.back();
+            }, 1000);
+        } else {
+            console.error("Error: No Google credential received.");
+        }
+    }
+
+    const parseJwt = (token: string) => {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+        );
+        return JSON.parse(jsonPayload);
+    };
+
+    const saveUserInfo = (data: any) => {
+        localStorage.setItem('userInfo', JSON.stringify({
+            data,
+            provider: "google"
+        }));
+    };
 
     // Disable background scroll when modal is open
     React.useEffect(() => {
@@ -208,7 +225,7 @@ export default function SongPage() {
         }
 
     }, [artist, song]);
-    
+
     // Fetch songs
     async function fetchSongs(songName: string) {
         try {
@@ -679,17 +696,17 @@ export default function SongPage() {
                         <div
                             key={index}
                             style={{
-                              minWidth: "120px",
-                            maxWidth: "120px",
-                            background: "#232323",
-                            textAlign: "center",
-                            border: "1px solid #222",
-                            borderRadius: "10px",
-                            padding: "10px 8px",
-                            boxSizing: "border-box",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
-                            transition: "transform 0.15s",
-                         }}
+                                minWidth: "120px",
+                                maxWidth: "120px",
+                                background: "#232323",
+                                textAlign: "center",
+                                border: "1px solid #222",
+                                borderRadius: "10px",
+                                padding: "10px 8px",
+                                boxSizing: "border-box",
+                                boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+                                transition: "transform 0.15s",
+                            }}
                         >
                             <Link href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.name)}`}>
                                 <a style={{ textDecoration: "none", color: "inherit" }}>
