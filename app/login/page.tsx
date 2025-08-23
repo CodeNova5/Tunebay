@@ -27,7 +27,7 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!googleClientId) return;
+    if (!googleClientId || userInfo) return; // Don't show One Tap if signed in
 
     // Add Google script if not already present
     if (!document.getElementById('google-gsi-script')) {
@@ -62,7 +62,7 @@ export default function LoginPage() {
         }
       };
     }
-  }, [googleClientId]);
+  }, [googleClientId, userInfo]);
 
   const parseJwt = (token: string) => {
     const base64Url = token.split('.')[1];
@@ -77,10 +77,7 @@ export default function LoginPage() {
   };
 
   const saveUserInfo = (data: any) => {
-    localStorage.setItem('userInfo', JSON.stringify({
-      data,
-      provider: "google"
-    }));
+    localStorage.setItem('userInfo', JSON.stringify(data)); // Save data directly
   };
 
   return (
@@ -89,7 +86,7 @@ export default function LoginPage() {
 
       <div style={styles.section}>
         <h2 style={styles.subtitle}>Google Login</h2>
-        {googleClientId && (
+        {!userInfo && googleClientId && (
           <>
             <div
               id="g_id_onload"
