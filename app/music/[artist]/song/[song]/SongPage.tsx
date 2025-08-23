@@ -38,6 +38,64 @@ export default function SongPage() {
     const [lyricsHtml, setLyricsHtml] = React.useState<string>("Loading lyrics...");
     const [relatedSongs, setRelatedSongs] = React.useState<any[]>([]);
     const router = useRouter();
+    const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        fetch('/api/Music/route?type=clientId')
+          .then(res => res.json())
+          .then(data => setGoogleClientId(data.clientId));
+      }, []);
+
+    // Google/Facebook scripts (browser-only)
+    React.useEffect(() => {
+        // Google script
+        if (!googleClientId) return;
+        const googleScript = document.createElement('script');
+        googleScript.src = 'https://accounts.google.com/gsi/client';
+        googleScript.async = true;
+        googleScript.defer = true;
+        document.body.appendChild(googleScript);
+
+        window.handleCredentialResponse = (response: any) => {
+            if (response.credential) {
+                const data = parseJwt(response.credential);
+                saveUserInfo('google', data);
+            } else {
+                console.error("Error: No Google credential received.");
+            }
+        };
+
+        window.onload = () => {
+            const userInfo = localStorage.getItem('userInfo');
+            if (!userInfo) {
+                window.google?.accounts.id.initialize({
+                    client_id: googleClientId,
+                    callback: window.handleCredentialResponse,
+                    cancel_on_tap_outside: false,
+                });
+                window.google?.accounts.id.prompt();
+            }
+        };
+
+        function saveUserInfo(provider: string, data: any) {
+            localStorage.setItem('userInfo', JSON.stringify({ provider, data }));
+        }
+        function parseJwt(token: string) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+            return JSON.parse(jsonPayload);
+        }
+
+        return () => {
+            document.body.removeChild(googleScript);
+        };
+    }, []);
 
     // Disable background scroll when modal is open
     React.useEffect(() => {
