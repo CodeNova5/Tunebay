@@ -18,47 +18,51 @@ export default function LoginPage() {
     fetch('/api/Music/route?type=clientId')
       .then(res => res.json())
       .then(data => setGoogleClientId(data.clientId));
+
+    // Check for stored user info
+    const stored = localStorage.getItem('userInfo');
+    if (stored) {
+      setUserInfo(JSON.parse(stored));
+    }
   }, []);
 
   useEffect(() => {
     if (!googleClientId) return;
 
-    // Add Google script
-    const googleScript = document.createElement('script');
-    googleScript.src = 'https://accounts.google.com/gsi/client';
-    googleScript.async = true;
-    googleScript.defer = true;
-    document.body.appendChild(googleScript);
+    // Add Google script if not already present
+    if (!document.getElementById('google-gsi-script')) {
+      const googleScript = document.createElement('script');
+      googleScript.src = 'https://accounts.google.com/gsi/client';
+      googleScript.async = true;
+      googleScript.defer = true;
+      googleScript.id = 'google-gsi-script';
+      document.body.appendChild(googleScript);
 
-    googleScript.onload = () => {
-      if (window.google && window.google.accounts && window.google.accounts.id) {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleCredentialResponse,
-          cancel_on_tap_outside: false,
-        });
-        window.google.accounts.id.prompt();
-      }
-    };
+      googleScript.onload = () => {
+        window.handleCredentialResponse = (response: any) => {
+          if (response.credential) {
+            const data = parseJwt(response.credential);
+            saveUserInfo(data);
+            setUserInfo(data);
+            setTimeout(() => {
+              router.back();
+            }, 1000);
+          } else {
+            console.error("Error: No Google credential received.");
+          }
+        };
 
-    // Cleanup
-    return () => {
-      document.body.removeChild(googleScript);
-    };
-  }, [googleClientId]);
-
-  function handleCredentialResponse(response: any) {
-    if (response.credential) {
-      const data = parseJwt(response.credential);
-      saveUserInfo(data);
-      setUserInfo(data);
-      setTimeout(() => {
-        router.back();
-      }, 1000);
-    } else {
-      console.error("Error: No Google credential received.");
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: window.handleCredentialResponse,
+            cancel_on_tap_outside: false,
+          });
+          window.google.accounts.id.prompt();
+        }
+      };
     }
-  }
+  }, [googleClientId]);
 
   const parseJwt = (token: string) => {
     const base64Url = token.split('.')[1];
@@ -82,10 +86,24 @@ export default function LoginPage() {
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Login with Google</h1>
+
       <div style={styles.section}>
         <h2 style={styles.subtitle}>Google Login</h2>
-        {/* Google One Tap will appear automatically */}
+        {googleClientId && (
+          <>
+            <div
+              id="g_id_onload"
+              data-client_id={googleClientId}
+              data-context="signin"
+              data-ux_mode="popup"
+              data-callback="handleCredentialResponse"
+              data-auto_prompt="false"
+            />
+            <div className="g_id_signin" data-type="standard" />
+          </>
+        )}
       </div>
+
       {userInfo && (
         <div style={styles.section}>
           <h2 style={styles.subtitle}>User Info</h2>
