@@ -27,7 +27,8 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!googleClientId || userInfo) return; // Don't show One Tap if signed in
+      if (!googleClientId || userInfo) return; // Don't show One Tap if signed in
+
 
     // Add Google script if not already present
     if (!document.getElementById('google-gsi-script')) {
@@ -62,7 +63,7 @@ export default function LoginPage() {
         }
       };
     }
-  }, [googleClientId, userInfo]);
+  }, [googleClientId]);
 
   const parseJwt = (token: string) => {
     const base64Url = token.split('.')[1];
@@ -77,7 +78,10 @@ export default function LoginPage() {
   };
 
   const saveUserInfo = (data: any) => {
-    localStorage.setItem('userInfo', JSON.stringify(data)); // Save data directly
+    localStorage.setItem('userInfo', JSON.stringify({
+      data,
+      provider: "google"
+    }));
   };
 
   return (
@@ -86,7 +90,7 @@ export default function LoginPage() {
 
       <div style={styles.section}>
         <h2 style={styles.subtitle}>Google Login</h2>
-        {!userInfo && googleClientId && (
+        {googleClientId && (
           <>
             <div
               id="g_id_onload"
@@ -105,13 +109,13 @@ export default function LoginPage() {
         <div style={styles.section}>
           <h2 style={styles.subtitle}>User Info</h2>
           <img
-            src={userInfo.picture}
+            src={userInfo.data.picture}
             alt="Profile"
             style={{ borderRadius: '50%', width: '100px', height: '100px', marginBottom: '1rem' }}
           />
-          <p><strong>Name:</strong> {userInfo.name}</p>
-          <p><strong>Email:</strong> {userInfo.email}</p>
-          <p><strong>ID:</strong> {userInfo.sub}</p>
+          <p><strong>Name:</strong> {userInfo.data.name}</p>
+          <p><strong>Email:</strong> {userInfo.data.email}</p>
+          <p><strong>ID:</strong> {userInfo.data.sub}</p>
         </div>
       )}
     </div>
