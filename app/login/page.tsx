@@ -27,8 +27,7 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-      if (!googleClientId || userInfo) return; // Don't show One Tap if signed in
-
+    if (!googleClientId) return;
 
     // Add Google script if not already present
     if (!document.getElementById('google-gsi-script')) {
@@ -59,11 +58,27 @@ export default function LoginPage() {
             callback: window.handleCredentialResponse,
             cancel_on_tap_outside: false,
           });
-          window.google.accounts.id.prompt();
+
+          // Only prompt One Tap if not signed in
+          if (!userInfo) {
+            window.google.accounts.id.prompt();
+          }
         }
       };
+    } else {
+      // If script already loaded, initialize and prompt as above
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: window.handleCredentialResponse,
+          cancel_on_tap_outside: false,
+        });
+        if (!userInfo) {
+          window.google.accounts.id.prompt();
+        }
+      }
     }
-  }, [googleClientId]);
+  }, [googleClientId, userInfo]);
 
   const parseJwt = (token: string) => {
     const base64Url = token.split('.')[1];
