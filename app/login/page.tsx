@@ -36,6 +36,7 @@ export default function LoginPage() {
           client_id: googleClientId,
           callback: handleCredentialResponse,
           cancel_on_tap_outside: false,
+          auto_select: true,
         });
         window.google.accounts.id.prompt();
       }
