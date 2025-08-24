@@ -1,210 +1,167 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { genre, mood, animeVerse, countrySongs, kids } from "../components/arrays";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+
 interface ChartItem {
-    title: string;
-    artist: string;
-    image: string;
+  title: string;
+  artist: string;
+  image: string;
 }
 
 interface Artist {
-    name: string;
-    img: string;
+  name: string;
+  img: string;
 }
 
 export default function HomePage() {
-    const [songs, setSongs] = useState<ChartItem[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [artists, setArtists] = useState<Artist[]>([]);
+  const [songs, setSongs] = useState<ChartItem[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-
-    useEffect(() => {
-        async function fetchTopSongs() {
-            try {
-                const response = await fetch(`/api/Music/route?type=topSongs`);
-                if (!response.ok) throw new Error("Failed to fetch top songs");
-                const data = await response.json();
-                setSongs(data);
-            } catch (err: any) {
-                console.error(err.message);
-                setError(err.message);
-            }
-        }
-        async function fetchTopArtists() {
-            try {
-                const response = await fetch(`/api/Music/route?type=trendingArtists`);
-                if (!response.ok) throw new Error("Failed to fetch top artists");
-                const data = await response.json();
-                console.log(data);
-                setArtists(data.map((artist: { name: string; img: string }) => ({ name: artist.name, img: artist.img })));
-            } catch (err: any) {
-                console.error(err.message);
-                setError(err.message);
-            }
-        }
-
-        fetchTopArtists();
-        fetchTopSongs();
-    }, []);
-    const getFirstArtist = (artist: string): string => {
-        return artist.split(/[,&]|feat(?:uring)?|\sX\s|\svs\.?\s/i)[0].trim();
-    };
-
-
-
-    if (error) {
-        return <h1>Error: {error}</h1>;
+  useEffect(() => {
+    async function fetchTopSongs() {
+      try {
+        const res = await fetch(`/api/Music/route?type=topSongs`);
+        if (!res.ok) throw new Error("Failed to fetch songs");
+        setSongs(await res.json());
+      } catch (err: any) {
+        setError(err.message);
+      }
     }
+    async function fetchTopArtists() {
+      try {
+        const res = await fetch(`/api/Music/route?type=trendingArtists`);
+        if (!res.ok) throw new Error("Failed to fetch artists");
+        const data = await res.json();
+        setArtists(data.map((a: any) => ({ name: a.name, img: a.img })));
+      } catch (err: any) {
+        setError(err.message);
+      }
+    }
+    fetchTopSongs();
+    fetchTopArtists();
+  }, []);
 
-    return (
-        <div style={{ backgroundColor: "#111" }} className="min-h-screen text-white">
-            <Header />
-            <h1 className="text-3xl font-bold mb-4">Top songs this week</h1>
-            <main>
-                <section aria-labelledby="top-songs">
-                    <h2 id="top-songs" className="text-2xl font-bold mb-4">Top Songs</h2>
-                    <div className="overflow-x-auto">
-                        <div className="grid grid-flow-col grid-rows-4 auto-cols-max gap-4 w-max">
-                            {songs.map((song, idx) => (
-                                <Link
-                                    key={idx}
-                                    href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
-                                >
-                                    <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                        <img
-                                            src={song.image}
-                                            alt={song.title}
-                                            className="w-full h-30 object-cover rounded"
-                                        />
-                                        <h3 className="font-semibold mt-2">{song.title}</h3>
-                                        <p className="text-gray-400">{song.artist}</p>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                </section>
+  const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <motion.section
+      className="mb-12"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl md:text-3xl font-bold relative">
+          {title}
+          <span className="absolute left-0 -bottom-1 w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded"></span>
+        </h2>
+        <Link href={`/explore/${title.toLowerCase()}`} className="text-sm text-purple-400 hover:underline">
+          See All →
+        </Link>
+      </div>
+      {children}
+    </motion.section>
+  );
 
-                <section aria-labelledby="top-artists">
-                    <h2 id="top-artists" className="text-2xl font-bold mb-4">Top Artists</h2>
-                    <div className="overflow-x-auto">
-                        <div className="flex space-x-4 p-4">
-                            {artists.map((artist, idx) => (
-                                <Link key={idx} href={`/music/${encodeURIComponent(artist.name)}`}>
-                                    <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                        <img
-                                            src={artist.img}
-                                            alt={artist.name}
-                                            className="w-30 h-30 object-cover rounded-full mb-2"
-                                        />
-                                        <h3 className="font-semibold text-lg">{artist.name}</h3>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            </main>
+  const Card = ({ img, title, subtitle, rounded = "lg" }: any) => (
+    <motion.div
+      whileHover={{ scale: 1.05 }}
+      className={`bg-gradient-to-br from-gray-800 to-gray-900 shadow-lg rounded-${rounded} p-3 cursor-pointer transition`}
+    >
+      <img src={img} alt={title} className={`w-full h-40 object-cover rounded-${rounded}`} />
+      <h3 className="font-semibold mt-3 text-white">{title}</h3>
+      {subtitle && <p className="text-sm text-gray-400">{subtitle}</p>}
+    </motion.div>
+  );
 
-            <div className="overflow-x-auto">
-                <h2 className="text-2xl font-bold mb-4">Genre</h2>
-                <div className="flex space-x-4 p-4">
-                    {genre.map((item) => (
-                        <Link key={item.id} href={item.link}>
-                            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    className="w-full h-48 object-contain rounded bg-black"
-                                />
-                                <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
-                                <p className="text-sm text-gray-200">{item.text}</p>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </div>
+  if (error) return <h1 className="text-red-400 text-center">{error}</h1>;
 
-            <div className="overflow-x-auto">
+  return (
+    <div className="min-h-screen bg-[#111] text-white">
+      <Header />
+      <main className="max-w-screen-xl mx-auto px-4 py-8">
+        <h1 className="text-4xl font-extrabold mb-8 text-center">🎶 Discover Music</h1>
 
-                <h2 className="text-2xl font-bold mb-4">Mood</h2>
-                <div className="flex space-x-4 p-4">
-                    {mood.map((item) => (
-                        <Link key={item.id} href={item.link}>
-                            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    className="w-full h-48 object-contain rounded bg-black"
-                                />
-                                <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
-                                <p className="text-sm text-gray-200">{item.text}</p>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </div>
+        <SectionWrapper title="Top Songs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            {songs.map((song, i) => (
+              <Link key={i} href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}>
+                <Card img={song.image} title={song.title} subtitle={song.artist} rounded="xl" />
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
 
-            <div className="overflow-x-auto">
-                <h2 className="text-2xl font-bold mb-4">AnimeVerse</h2>
-                <div className="flex space-x-4 p-4">
-                    {animeVerse.map((item) => (
-                        <Link key={item.id} href={item.link}>
-                            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    className="w-full h-48 object-contain rounded bg-black"
-                                />
-                                <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
-                                <p className="text-sm text-gray-200">{item.text}</p>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </div>
+        <SectionWrapper title="Top Artists">
+          <div className="flex space-x-6 overflow-x-auto pb-2">
+            {artists.map((a, i) => (
+              <Link key={i} href={`/music/${encodeURIComponent(a.name)}`}>
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  className="flex flex-col items-center bg-gray-800/40 p-4 rounded-2xl shadow"
+                >
+                  <img src={a.img} alt={a.name} className="w-28 h-28 rounded-full object-cover mb-2" />
+                  <p className="text-white font-medium">{a.name}</p>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
 
-            <div className="overflow-x-auto">
-                <h2 className="text-2xl font-bold mb-4">Country Songs</h2>
-                <div className="flex space-x-4 p-4">
-                    {countrySongs.map((item) => (
-                        <Link key={item.id} href={item.link}>
-                            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    className="w-full h-48 object-contain rounded bg-black"
-                                />
-                                <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
-                                <p className="text-sm text-gray-200">{item.text}</p>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </div>
+        <SectionWrapper title="Genres">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            {genre.map((g) => (
+              <Link key={g.id} href={g.link}>
+                <Card img={g.image} title={g.title} subtitle={g.text} rounded="2xl" />
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
 
-            <div className="overflow-x-auto">
-                <h2 className="text-2xl font-bold mb-4">Kids Songs</h2>
-                <div className="flex space-x-4 p-4">
-                    {kids.map((item) => (
-                        <Link key={item.id} href={item.link}>
-                            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer w-64">
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    className="w-full h-48 object-contain rounded bg-black"
-                                />
-                                <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
-                                <p className="text-sm text-gray-200">{item.text}</p>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </div>
-            <Footer />
-        </div>
-    );
+        <SectionWrapper title="Mood">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            {mood.map((m) => (
+              <Link key={m.id} href={m.link}>
+                <Card img={m.image} title={m.title} subtitle={m.text} rounded="2xl" />
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
+
+        <SectionWrapper title="AnimeVerse">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            {animeVerse.map((a) => (
+              <Link key={a.id} href={a.link}>
+                <Card img={a.image} title={a.title} subtitle={a.text} rounded="2xl" />
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
+
+        <SectionWrapper title="Country Songs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            {countrySongs.map((c) => (
+              <Link key={c.id} href={c.link}>
+                <Card img={c.image} title={c.title} subtitle={c.text} rounded="2xl" />
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
+
+        <SectionWrapper title="Kids">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            {kids.map((k) => (
+              <Link key={k.id} href={k.link}>
+                <Card img={k.image} title={k.title} subtitle={k.text} rounded="2xl" />
+              </Link>
+            ))}
+          </div>
+        </SectionWrapper>
+      </main>
+      <Footer />
+    </div>
+  );
 }
