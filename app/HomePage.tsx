@@ -94,13 +94,13 @@ export default function HomePage() {
                 <SectionWrapper title="Top Songs">
                     <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
                         {/* Chunk songs into groups of 8 */}
-                        {Array.from({ length: Math.ceil(songs.length / 8) }, (_, pageIndex) => {
-                            const pageSongs = songs.slice(pageIndex * 8, pageIndex * 8 + 8);
+                        {Array.from({ length: Math.ceil(songs.length / 9) }, (_, pageIndex) => {
+                            const pageSongs = songs.slice(pageIndex * 9, pageIndex * 9 + 9);
 
                             return (
                                 <div
                                     key={pageIndex}
-                                    className="snap-start shrink-0 grid grid-cols-2 grid-rows-4 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
+                                    className="snap-start shrink-0 grid grid-cols-3 grid-rows-3 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
                                 >
                                     {pageSongs.map((song, i) => (
                                         <Link
