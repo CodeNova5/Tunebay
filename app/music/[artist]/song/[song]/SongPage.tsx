@@ -58,7 +58,7 @@ export default function SongPage() {
     if (!googleClientId) return;
 
     // Add Google script if not already present
-    if (!document.getElementById('google-gsi-script')) {
+    if (!userInfo) {
       const googleScript = document.createElement('script');
       googleScript.src = 'https://accounts.google.com/gsi/client';
       googleScript.async = true;
