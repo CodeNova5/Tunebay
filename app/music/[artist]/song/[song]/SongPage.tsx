@@ -55,7 +55,7 @@ export default function SongPage() {
     }, []);
 
     React.useEffect(() => {
-        if (!googleClientId) return;
+        if (!googleClientId || userInfo) return;
 
         // Add Google script
         const googleScript = document.createElement('script');
