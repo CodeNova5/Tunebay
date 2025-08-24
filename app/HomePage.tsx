@@ -21,7 +21,7 @@ export default function HomePage() {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [error, setError] = useState<string | null>(null);
     const scrollRef = React.useRef<HTMLDivElement | null>(null);
-    const [progress, setProgress] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
     useEffect(() => {
         async function fetchTopSongs() {
             try {
@@ -55,11 +55,11 @@ export default function HomePage() {
         const handleScroll = () => {
             const scrollLeft = container.scrollLeft;
             const pageWidth = container.clientWidth;
-            setProgress(scrollLeft / pageWidth); // fractional progress
+            const page = Math.round(scrollLeft / pageWidth); // track closest page
+            setCurrentPage(page);
         };
 
         container.addEventListener("scroll", handleScroll, { passive: true });
-
         return () => container.removeEventListener("scroll", handleScroll);
     }, []);
 
@@ -141,24 +141,19 @@ export default function HomePage() {
                     </div>
 
                     {/* Indicator dots */}
-                    <div className="relative flex justify-center gap-2 mt-2">
-                        {/* Base gray dots */}
+                    <div className="flex justify-center gap-2 mt-2">
                         {Array.from({ length: totalPages }, (_, i) => (
                             <div
                                 key={i}
-                                className="w-2.5 h-2.5 rounded-full bg-gray-400/50"
+                                className={`w-2.5 h-2.5 rounded-full transition-colors ${i === currentPage ? "bg-blue-500" : "bg-gray-400/50"
+                                    }`}
                             />
                         ))}
-
-                        {/* Moving blue indicator */}
-                        <div
-                            className="absolute top-0 left-0 w-2.5 h-2.5 rounded-full bg-blue-500 transition-transform duration-150"
-                            style={{
-                                transform: `translateX(${progress * 12}px)` // 12px ≈ gap+dot size
-                            }}
-                        />
                     </div>
                 </SectionWrapper>
+
+
+
                 <SectionWrapper title="Top Artists">
                     <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {artists.map((a, i) => (
