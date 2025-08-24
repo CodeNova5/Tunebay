@@ -21,7 +21,7 @@ export default function HomePage() {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [error, setError] = useState<string | null>(null);
     const scrollRef = React.useRef<HTMLDivElement | null>(null);
-    const [currentPage, setCurrentPage] = useState(0);
+    const [progress, setProgress] = useState(0);
     useEffect(() => {
         async function fetchTopSongs() {
             try {
@@ -55,15 +55,13 @@ export default function HomePage() {
         const handleScroll = () => {
             const scrollLeft = container.scrollLeft;
             const pageWidth = container.clientWidth;
-            const page = Math.round(scrollLeft / pageWidth);
-            setCurrentPage(page);
+            setProgress(scrollLeft / pageWidth); // fractional progress
         };
 
         container.addEventListener("scroll", handleScroll, { passive: true });
 
         return () => container.removeEventListener("scroll", handleScroll);
     }, []);
-
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
@@ -108,7 +106,7 @@ export default function HomePage() {
     return (
         <div className="min-h-screen bg-[#111] text-white ">
             <Header />
-            <main className="max-w-screen-xl mx-auto mt-40 py-6 sm:py-10">
+            <main className="max-w-screen-xl mx-auto mt-10 py-6 sm:py-10">
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
 
                 <SectionWrapper title="Top Songs">
@@ -116,7 +114,6 @@ export default function HomePage() {
                         ref={scrollRef}
                         className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
                     >
-                        {/* Chunk songs into groups of 6 */}
                         {Array.from({ length: totalPages }, (_, pageIndex) => {
                             const pageSongs = songs.slice(pageIndex * 6, pageIndex * 6 + 6);
 
@@ -143,18 +140,25 @@ export default function HomePage() {
                         })}
                     </div>
 
-                    {/* Page indicator dots */}
-                    <div className="flex justify-center gap-2 mt-2">
+                    {/* Indicator dots */}
+                    <div className="relative flex justify-center gap-2 mt-2">
+                        {/* Base gray dots */}
                         {Array.from({ length: totalPages }, (_, i) => (
                             <div
                                 key={i}
-                                className={`w-2.5 h-2.5 rounded-full transition-colors ${i === currentPage ? "bg-blue-500" : "bg-gray-400/50"
-                                    }`}
+                                className="w-2.5 h-2.5 rounded-full bg-gray-400/50"
                             />
                         ))}
+
+                        {/* Moving blue indicator */}
+                        <div
+                            className="absolute top-0 left-0 w-2.5 h-2.5 rounded-full bg-blue-500 transition-transform duration-150"
+                            style={{
+                                transform: `translateX(${progress * 12}px)` // 12px ≈ gap+dot size
+                            }}
+                        />
                     </div>
                 </SectionWrapper>
-
                 <SectionWrapper title="Top Artists">
                     <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {artists.map((a, i) => (
