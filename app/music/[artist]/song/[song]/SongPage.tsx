@@ -55,32 +55,58 @@ export default function SongPage() {
     }, []);
 
     React.useEffect(() => {
-        if (!googleClientId || userInfo) return;
+    if (!googleClientId) return;
 
-        // Add Google script
-        const googleScript = document.createElement('script');
-        googleScript.src = 'https://accounts.google.com/gsi/client';
-        googleScript.async = true;
-        googleScript.defer = true;
-        document.body.appendChild(googleScript);
+    // Add Google script if not already present
+    if (!document.getElementById('google-gsi-script')) {
+      const googleScript = document.createElement('script');
+      googleScript.src = 'https://accounts.google.com/gsi/client';
+      googleScript.async = true;
+      googleScript.defer = true;
+      googleScript.id = 'google-gsi-script';
+      document.body.appendChild(googleScript);
 
-        googleScript.onload = () => {
-            if (window.google && window.google.accounts && window.google.accounts.id) {
-                window.google.accounts.id.initialize({
-                    client_id: googleClientId,
-                    callback: handleCredentialResponse,
-                    cancel_on_tap_outside: false,
-                    auto_select: true,
-                });
-                window.google.accounts.id.prompt();
-            }
+      googleScript.onload = () => {
+        window.handleCredentialResponse = (response: any) => {
+          if (response.credential) {
+            const data = parseJwt(response.credential);
+            saveUserInfo(data);
+            setUserInfo(data);
+            setTimeout(() => {
+              router.back();
+            }, 1000);
+          } else {
+            console.error("Error: No Google credential received.");
+          }
         };
 
-        // Cleanup
-        return () => {
-            document.body.removeChild(googleScript);
-        };
-    }, [googleClientId]);
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: window.handleCredentialResponse,
+            cancel_on_tap_outside: false,
+          });
+
+          // Only prompt One Tap if not signed in
+          if (!userInfo) {
+            window.google.accounts.id.prompt();
+          }
+        }
+      };
+    } else {
+      // If script already loaded, initialize and prompt as above
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: window.handleCredentialResponse,
+          cancel_on_tap_outside: false,
+        });
+        if (!userInfo) {
+          window.google.accounts.id.prompt();
+        }
+      }
+    }
+  }, [googleClientId, userInfo]);
 
     function handleCredentialResponse(response: any) {
         if (response.credential) {
