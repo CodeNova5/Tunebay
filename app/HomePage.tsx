@@ -91,30 +91,44 @@ export default function HomePage() {
             <main className="max-w-screen-xl mx-auto py-6 sm:py-10">
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
 
-                <SectionWrapper title="Top Songs">
-                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
-                        {/* Chunk songs into groups of 8 */}
-                        {Array.from({ length: Math.ceil(songs.length / 9) }, (_, pageIndex) => {
-                            const pageSongs = songs.slice(pageIndex * 9, pageIndex * 9 + 9);
+               <SectionWrapper title="Top Songs">
+  <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+    {/* Chunk songs into groups of 4 */}
+    {Array.from({ length: Math.ceil(songs.length / 4) }, (_, pageIndex) => {
+      const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
 
-                            return (
-                                <div
-                                    key={pageIndex}
-                                    className="snap-start shrink-0 grid grid-cols-3 grid-rows-3 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
-                                >
-                                    {pageSongs.map((song, i) => (
-                                        <Link
-                                            key={i}
-                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
-                                        >
-                                            <Card img={song.image} title={song.title} subtitle={song.artist} rounded="xl" />
-                                        </Link>
-                                    ))}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </SectionWrapper>
+      return (
+        <div
+          key={pageIndex}
+          className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+        >
+          {pageSongs.map((song, i) => (
+            <Link
+              key={i}
+              href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+            >
+              <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
+                <img
+                  src={song.image}
+                  alt={song.title}
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+                <div className="flex flex-col truncate">
+                  <span className="font-medium text-gray-900 truncate">
+                    {song.title}
+                  </span>
+                  <span className="text-sm text-gray-500 truncate">
+                    {song.artist}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      );
+    })}
+  </div>
+</SectionWrapper>
   
 
                 <SectionWrapper title="Top Artists">
