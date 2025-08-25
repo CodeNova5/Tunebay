@@ -114,10 +114,10 @@ export default function HomePage() {
                   className="w-16 h-16 rounded-lg object-cover"
                 />
                 <div className="flex flex-col truncate">
-                  <span className="font-medium text-gray-900 truncate">
+                  <span className="font-medium text-white truncate">
                     {song.title}
                   </span>
-                  <span className="text-sm text-gray-500 truncate">
+                  <span className="text-sm text-gray-400 truncate">
                     {song.artist}
                   </span>
                 </div>
