@@ -20,8 +20,7 @@ export default function HomePage() {
     const [songs, setSongs] = useState<ChartItem[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const scrollRef = React.useRef<HTMLDivElement | null>(null);
-    const [currentPage, setCurrentPage] = useState(0);
+
     useEffect(() => {
         async function fetchTopSongs() {
             try {
@@ -45,36 +44,6 @@ export default function HomePage() {
         fetchTopSongs();
         fetchTopArtists();
     }, []);
-
-    const totalPages = Math.ceil(songs.length / 6);
-
-    useEffect(() => {
-        const scrollContainer = scrollRef.current;
-        if (!scrollContainer) return;
-
-        const handleScroll = () => {
-            const scrollLeft = scrollContainer.scrollLeft;
-            const pageWidth = scrollContainer.clientWidth;
-            const page = Math.round(scrollLeft / pageWidth);
-            setCurrentPage(page);
-        };
-
-        scrollContainer.addEventListener("scroll", handleScroll);
-        return () => scrollContainer.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    // Scroll to page when clicking dot
-    const goToPage = (page: number) => {
-        const scrollContainer = scrollRef.current;
-        if (!scrollContainer) return;
-
-        const pageWidth = scrollContainer.clientWidth;
-        scrollContainer.scrollTo({
-            left: page * pageWidth,
-            behavior: "smooth",
-        });
-    };
-
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
@@ -117,56 +86,36 @@ export default function HomePage() {
     if (error) return <h1 className="text-red-400 text-center">{error}</h1>;
 
     return (
-        <div className="min-h-screen bg-[#111] text-white ">
+        <div className="min-h-screen bg-[#111] text-white">
             <Header />
-            <main className="max-w-screen-xl mx-auto mt-10 py-6 sm:py-10">
+            <main className="max-w-screen-xl mx-auto py-6 sm:py-10">
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
 
                 <SectionWrapper title="Top Songs">
-            <div
-                ref={scrollRef}
-                className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
-            >
-                {Array.from({ length: totalPages }, (_, pageIndex) => {
-                    const pageSongs = songs.slice(pageIndex * 6, pageIndex * 6 + 6);
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+                        {/* Chunk songs into groups of 8 */}
+                        {Array.from({ length: Math.ceil(songs.length / 9) }, (_, pageIndex) => {
+                            const pageSongs = songs.slice(pageIndex * 9, pageIndex * 9 + 9);
 
-                    return (
-                        <div
-                            key={pageIndex}
-                            className="snap-start shrink-0 grid grid-cols-2 grid-rows-3 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
-                        >
-                            {pageSongs.map((song, i) => (
-                                <Link
-                                    key={i}
-                                    href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                            return (
+                                <div
+                                    key={pageIndex}
+                                    className="snap-start shrink-0 grid grid-cols-3 grid-rows-3 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
                                 >
-                                    <Card
-                                        img={song.image}
-                                        title={song.title}
-                                        subtitle={song.artist}
-                                        rounded="xl"
-                                    />
-                                </Link>
-                            ))}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Indicator dots */}
-            <div className="flex justify-center gap-2 mt-2">
-                {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                        key={i}
-                        onClick={() => goToPage(i)}
-                        className={`w-2.5 h-2.5 rounded-full transition-colors ${i === currentPage ? "bg-blue-500" : "bg-gray-400/50"
-                            }`}
-                    />
-                ))}
-            </div>
-        </SectionWrapper>
-
-
+                                    {pageSongs.map((song, i) => (
+                                        <Link
+                                            key={i}
+                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                                        >
+                                            <Card img={song.image} title={song.title} subtitle={song.artist} rounded="xl" />
+                                        </Link>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </SectionWrapper>
+  
 
                 <SectionWrapper title="Top Artists">
                     <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
