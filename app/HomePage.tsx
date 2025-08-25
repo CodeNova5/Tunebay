@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { genre, mood, animeVerse, countrySongs, kids } from "../components/arrays";
@@ -20,6 +20,11 @@ export default function HomePage() {
     const [songs, setSongs] = useState<ChartItem[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
     const [error, setError] = useState<string | null>(null);
+const scrollRef = useRef(null);
+  const [activePage, setActivePage] = useState(0);
+
+  const totalPages = Math.ceil(songs.length / 4);
+
 
     useEffect(() => {
         async function fetchTopSongs() {
@@ -44,6 +49,22 @@ export default function HomePage() {
         fetchTopSongs();
         fetchTopArtists();
     }, []);
+
+useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const pageWidth = el.clientWidth;
+      const scrollLeft = el.scrollLeft;
+      const pageIndex = Math.round(scrollLeft / pageWidth);
+      setActivePage(pageIndex);
+    };
+
+    el.addEventListener("scroll", handleScroll);
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
