@@ -57,12 +57,6 @@ export default function HomePage() {
                     {title}
                     <span className="absolute left-0 -bottom-1 w-12 sm:w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded"></span>
                 </h2>
-                <Link
-                    href={`/explore/${title.toLowerCase()}`}
-                    className="text-xs sm:text-sm text-purple-400 hover:underline"
-                >
-                    See All →
-                </Link>
             </div>
             {children}
         </motion.section>
@@ -76,7 +70,7 @@ export default function HomePage() {
             <img
                 src={img}
                 alt={title}
-                className={`w-full h-32 sm:h-40 object-cover rounded-${rounded}`}
+                className={`w-30 h-30 sm:h-40 object-cover rounded-${rounded}`}
             />
             <h3 className="font-semibold mt-2 text-sm sm:text-base truncate text-white">{title}</h3>
             {subtitle && <p className="text-xs sm:text-sm text-gray-400 truncate">{subtitle}</p>}
@@ -149,7 +143,7 @@ export default function HomePage() {
 
                 {/* Repeat same structure for Genres, Mood, AnimeVerse, Country Songs, Kids */}
                 <SectionWrapper title="Genres">
-                    <div className="grid grid-cols-6 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
+                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {genre.map((g) => (
                             <Link key={g.id} href={g.link}>
                                 <Card img={g.image} title={g.title} subtitle={g.text} rounded="2xl" />
@@ -159,7 +153,7 @@ export default function HomePage() {
                 </SectionWrapper>
 
                 <SectionWrapper title="Mood">
-                    <div className="grid grid-cols-6 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
+                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {mood.map((m) => (
                             <Link key={m.id} href={m.link}>
                                 <Card img={m.image} title={m.title} subtitle={m.text} rounded="2xl" />
@@ -169,7 +163,7 @@ export default function HomePage() {
                 </SectionWrapper>
 
                 <SectionWrapper title="AnimeVerse">
-                    <div className="grid grid-cols-6 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
+                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {animeVerse.map((a) => (
                             <Link key={a.id} href={a.link}>
                                 <Card img={a.image} title={a.title} subtitle={a.text} rounded="2xl" />
@@ -179,7 +173,7 @@ export default function HomePage() {
                 </SectionWrapper>
 
                 <SectionWrapper title="Country Songs">
-                    <div className="grid grid-cols-6 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
+                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {countrySongs.map((c) => (
                             <Link key={c.id} href={c.link}>
                                 <Card img={c.image} title={c.title} subtitle={c.text} rounded="2xl" />
@@ -189,7 +183,7 @@ export default function HomePage() {
                 </SectionWrapper>
 
                 <SectionWrapper title="Kids">
-                    <div className="grid grid-cols-6 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
+                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {kids.map((k) => (
                             <Link key={k.id} href={k.link}>
                                 <Card img={k.image} title={k.title} subtitle={k.text} rounded="2xl" />
