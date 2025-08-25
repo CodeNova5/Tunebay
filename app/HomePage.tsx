@@ -49,19 +49,32 @@ export default function HomePage() {
     const totalPages = Math.ceil(songs.length / 6);
 
     useEffect(() => {
-        const container = scrollRef.current;
-        if (!container) return;
+        const scrollContainer = scrollRef.current;
+        if (!scrollContainer) return;
 
         const handleScroll = () => {
-            const scrollLeft = container.scrollLeft;
-            const pageWidth = container.clientWidth;
-            const page = Math.round(scrollLeft / pageWidth); // track closest page
+            const scrollLeft = scrollContainer.scrollLeft;
+            const pageWidth = scrollContainer.clientWidth;
+            const page = Math.round(scrollLeft / pageWidth);
             setCurrentPage(page);
         };
 
-        container.addEventListener("scroll", handleScroll, { passive: true });
-        return () => container.removeEventListener("scroll", handleScroll);
+        scrollContainer.addEventListener("scroll", handleScroll);
+        return () => scrollContainer.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // Scroll to page when clicking dot
+    const goToPage = (page: number) => {
+        const scrollContainer = scrollRef.current;
+        if (!scrollContainer) return;
+
+        const pageWidth = scrollContainer.clientWidth;
+        scrollContainer.scrollTo({
+            left: page * pageWidth,
+            behavior: "smooth",
+        });
+    };
+
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
@@ -110,47 +123,48 @@ export default function HomePage() {
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
 
                 <SectionWrapper title="Top Songs">
-                    <div
-                        ref={scrollRef}
-                        className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
-                    >
-                        {Array.from({ length: totalPages }, (_, pageIndex) => {
-                            const pageSongs = songs.slice(pageIndex * 6, pageIndex * 6 + 6);
+            <div
+                ref={scrollRef}
+                className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
+            >
+                {Array.from({ length: totalPages }, (_, pageIndex) => {
+                    const pageSongs = songs.slice(pageIndex * 6, pageIndex * 6 + 6);
 
-                            return (
-                                <div
-                                    key={pageIndex}
-                                    className="snap-start shrink-0 grid grid-cols-2 grid-rows-3 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
+                    return (
+                        <div
+                            key={pageIndex}
+                            className="snap-start shrink-0 grid grid-cols-2 grid-rows-3 gap-4 w-[90vw] sm:w-[500px] md:w-[600px]"
+                        >
+                            {pageSongs.map((song, i) => (
+                                <Link
+                                    key={i}
+                                    href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
                                 >
-                                    {pageSongs.map((song, i) => (
-                                        <Link
-                                            key={i}
-                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
-                                        >
-                                            <Card
-                                                img={song.image}
-                                                title={song.title}
-                                                subtitle={song.artist}
-                                                rounded="xl"
-                                            />
-                                        </Link>
-                                    ))}
-                                </div>
-                            );
-                        })}
-                    </div>
+                                    <Card
+                                        img={song.image}
+                                        title={song.title}
+                                        subtitle={song.artist}
+                                        rounded="xl"
+                                    />
+                                </Link>
+                            ))}
+                        </div>
+                    );
+                })}
+            </div>
 
-                    {/* Indicator dots */}
-                    <div className="flex justify-center gap-2 mt-2">
-                        {Array.from({ length: totalPages }, (_, i) => (
-                            <div
-                                key={i}
-                                className={`w-2.5 h-2.5 rounded-full transition-colors ${i === currentPage ? "bg-blue-500" : "bg-gray-400/50"
-                                    }`}
-                            />
-                        ))}
-                    </div>
-                </SectionWrapper>
+            {/* Indicator dots */}
+            <div className="flex justify-center gap-2 mt-2">
+                {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                        key={i}
+                        onClick={() => goToPage(i)}
+                        className={`w-2.5 h-2.5 rounded-full transition-colors ${i === currentPage ? "bg-blue-500" : "bg-gray-400/50"
+                            }`}
+                    />
+                ))}
+            </div>
+        </SectionWrapper>
 
 
 
