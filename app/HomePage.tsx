@@ -119,36 +119,57 @@ useEffect(() => {
       const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
 
       return (
-        <div
-          key={pageIndex}
-          className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
-        >
-          {pageSongs.map((song, i) => (
-            <Link
-              key={i}
-              href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+         {/* Scrollable songs */}
+      <div
+        ref={scrollRef}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
+      >
+        {Array.from({ length: totalPages }, (_, pageIndex) => {
+          const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
+
+          return (
+            <div
+              key={pageIndex}
+              className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
             >
-              <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
-                <img
-                  src={song.image}
-                  alt={song.title}
-                  className="w-16 h-16 rounded-lg object-cover"
-                />
-                <div className="flex flex-col truncate">
-                  <span className="font-medium text-white truncate">
-                    {song.title}
-                  </span>
-                  <span className="text-sm text-gray-400 truncate">
-                    {song.artist}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      );
-    })}
-  </div>
+              {pageSongs.map((song, i) => (
+                <Link
+                  key={i}
+                  href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                >
+                  <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
+                    <img
+                      src={song.image}
+                      alt={song.title}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                    <div className="flex flex-col truncate">
+                      <span className="font-medium text-gray-900 truncate">
+                        {song.title}
+                      </span>
+                      <span className="text-sm text-gray-500 truncate">
+                        {song.artist}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Indicator dots */}
+      <div className="flex justify-center gap-2 mt-2">
+        {Array.from({ length: totalPages }, (_, i) => (
+          <div
+            key={i}
+            className={`w-2.5 h-2.5 rounded-full transition ${
+              activePage === i ? "bg-blue-500" : "bg-gray-400/50"
+            }`}
+          />
+        ))}
+      </div>
 </SectionWrapper>
   
 
