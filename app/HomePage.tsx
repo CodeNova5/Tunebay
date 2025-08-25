@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState,useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { genre, mood, animeVerse, countrySongs, kids } from "../components/arrays";
@@ -20,11 +20,6 @@ export default function HomePage() {
     const [songs, setSongs] = useState<ChartItem[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
     const [error, setError] = useState<string | null>(null);
-const scrollRef = useRef(null);
-  const [activePage, setActivePage] = useState(0);
-
-  const totalPages = Math.ceil(songs.length / 4);
-
 
     useEffect(() => {
         async function fetchTopSongs() {
@@ -49,22 +44,6 @@ const scrollRef = useRef(null);
         fetchTopSongs();
         fetchTopArtists();
     }, []);
-
-useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const handleScroll = () => {
-      const pageWidth = el.clientWidth;
-      const scrollLeft = el.scrollLeft;
-      const pageIndex = Math.round(scrollLeft / pageWidth);
-      setActivePage(pageIndex);
-    };
-
-    el.addEventListener("scroll", handleScroll);
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
-
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
@@ -119,57 +98,36 @@ useEffect(() => {
       const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
 
       return (
-         {/* Scrollable songs */}
-      <div
-        ref={scrollRef}
-        className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 scroll-smooth"
-      >
-        {Array.from({ length: totalPages }, (_, pageIndex) => {
-          const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
-
-          return (
-            <div
-              key={pageIndex}
-              className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+        <div
+          key={pageIndex}
+          className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+        >
+          {pageSongs.map((song, i) => (
+            <Link
+              key={i}
+              href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
             >
-              {pageSongs.map((song, i) => (
-                <Link
-                  key={i}
-                  href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
-                >
-                  <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
-                    <img
-                      src={song.image}
-                      alt={song.title}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex flex-col truncate">
-                      <span className="font-medium text-gray-900 truncate">
-                        {song.title}
-                      </span>
-                      <span className="text-sm text-gray-500 truncate">
-                        {song.artist}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Indicator dots */}
-      <div className="flex justify-center gap-2 mt-2">
-        {Array.from({ length: totalPages }, (_, i) => (
-          <div
-            key={i}
-            className={`w-2.5 h-2.5 rounded-full transition ${
-              activePage === i ? "bg-blue-500" : "bg-gray-400/50"
-            }`}
-          />
-        ))}
-      </div>
+              <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
+                <img
+                  src={song.image}
+                  alt={song.title}
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+                <div className="flex flex-col truncate">
+                  <span className="font-medium text-white truncate">
+                    {song.title}
+                  </span>
+                  <span className="text-sm text-gray-400 truncate">
+                    {song.artist}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      );
+    })}
+  </div>
 </SectionWrapper>
   
 
