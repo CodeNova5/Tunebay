@@ -359,7 +359,7 @@ export default function SongPage() {
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = fileName;
-                a.click();
+                
 
                 setDownloadUrl(url);
 
