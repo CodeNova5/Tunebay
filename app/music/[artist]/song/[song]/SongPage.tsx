@@ -328,7 +328,7 @@ export default function SongPage() {
                     {
                         method: "GET",
                         headers: {
-                            "x-rapidapi-key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY as string,
+                            "x-rapidapi-key": process.env.RAPIDAPI_KEY as string,
                             "x-rapidapi-host": "youtube-mp36.p.rapidapi.com",
                         },
                     }
