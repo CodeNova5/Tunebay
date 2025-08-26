@@ -62,18 +62,19 @@ export default function HomePage() {
         </motion.section>
     );
 
+    // 🔹 Compact Card component
     const Card = ({ img, title, subtitle, rounded = "lg" }: any) => (
         <motion.div
             whileHover={{ scale: 1.05 }}
-            className={`bg-gradient-to-br from-gray-800 to-gray-900 shadow-md rounded-${rounded} p-2 sm:p-3 cursor-pointer`}
+            className={`bg-gradient-to-br from-gray-800 to-gray-900 shadow-md rounded-${rounded} p-2 cursor-pointer w-[120px] sm:w-[150px]`}
         >
             <img
                 src={img}
                 alt={title}
-                className={`w-30 h-30 sm:h-40 object-cover rounded-${rounded}`}
+                className={`w-full h-24 sm:h-28 object-cover rounded-${rounded}`}
             />
-            <h3 className="font-semibold mt-2 text-sm sm:text-base truncate text-white">{title}</h3>
-            {subtitle && <p className="text-xs sm:text-sm text-gray-400 truncate">{subtitle}</p>}
+            <h3 className="font-semibold mt-2 text-xs sm:text-sm truncate text-white">{title}</h3>
+            {subtitle && <p className="text-[10px] sm:text-xs text-gray-400 truncate">{subtitle}</p>}
         </motion.div>
     );
 
@@ -85,46 +86,45 @@ export default function HomePage() {
             <main className="max-w-screen-xl mx-auto py-6 sm:py-10">
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
 
-               <SectionWrapper title="Top Songs">
-  <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
-    {/* Chunk songs into groups of 4 */}
-    {Array.from({ length: Math.ceil(songs.length / 4) }, (_, pageIndex) => {
-      const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
+                {/* 🔹 Top Songs (kept full size) */}
+                <SectionWrapper title="Top Songs">
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+                        {Array.from({ length: Math.ceil(songs.length / 4) }, (_, pageIndex) => {
+                            const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
+                            return (
+                                <div
+                                    key={pageIndex}
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+                                >
+                                    {pageSongs.map((song, i) => (
+                                        <Link
+                                            key={i}
+                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                                        >
+                                            <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
+                                                <img
+                                                    src={song.image}
+                                                    alt={song.title}
+                                                    className="w-16 h-16 rounded-lg object-cover"
+                                                />
+                                                <div className="flex flex-col truncate">
+                                                    <span className="font-medium text-white truncate">
+                                                        {song.title}
+                                                    </span>
+                                                    <span className="text-sm text-gray-400 truncate">
+                                                        {song.artist}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </SectionWrapper>
 
-      return (
-        <div
-          key={pageIndex}
-          className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
-        >
-          {pageSongs.map((song, i) => (
-            <Link
-              key={i}
-              href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
-            >
-              <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
-                <img
-                  src={song.image}
-                  alt={song.title}
-                  className="w-16 h-16 rounded-lg object-cover"
-                />
-                <div className="flex flex-col truncate">
-                  <span className="font-medium text-white truncate">
-                    {song.title}
-                  </span>
-                  <span className="text-sm text-gray-400 truncate">
-                    {song.artist}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      );
-    })}
-  </div>
-</SectionWrapper>
-  
-
+                {/* 🔹 Top Artists (kept same size) */}
                 <SectionWrapper title="Top Artists">
                     <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
                         {artists.map((a, i) => (
@@ -141,9 +141,9 @@ export default function HomePage() {
                     </div>
                 </SectionWrapper>
 
-                {/* Repeat same structure for Genres, Mood, AnimeVerse, Country Songs, Kids */}
+                {/* 🔹 Genres */}
                 <SectionWrapper title="Genres">
-                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-1 snap-x snap-mandatory">
                         {genre.map((g) => (
                             <Link key={g.id} href={g.link}>
                                 <Card img={g.image} title={g.title} subtitle={g.text} rounded="2xl" />
@@ -152,8 +152,9 @@ export default function HomePage() {
                     </div>
                 </SectionWrapper>
 
+                {/* 🔹 Mood */}
                 <SectionWrapper title="Mood">
-                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-1 snap-x snap-mandatory">
                         {mood.map((m) => (
                             <Link key={m.id} href={m.link}>
                                 <Card img={m.image} title={m.title} subtitle={m.text} rounded="2xl" />
@@ -162,8 +163,9 @@ export default function HomePage() {
                     </div>
                 </SectionWrapper>
 
+                {/* 🔹 AnimeVerse */}
                 <SectionWrapper title="AnimeVerse">
-                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-1 snap-x snap-mandatory">
                         {animeVerse.map((a) => (
                             <Link key={a.id} href={a.link}>
                                 <Card img={a.image} title={a.title} subtitle={a.text} rounded="2xl" />
@@ -172,8 +174,9 @@ export default function HomePage() {
                     </div>
                 </SectionWrapper>
 
+                {/* 🔹 Country Songs */}
                 <SectionWrapper title="Country Songs">
-                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-1 snap-x snap-mandatory">
                         {countrySongs.map((c) => (
                             <Link key={c.id} href={c.link}>
                                 <Card img={c.image} title={c.title} subtitle={c.text} rounded="2xl" />
@@ -182,8 +185,9 @@ export default function HomePage() {
                     </div>
                 </SectionWrapper>
 
+                {/* 🔹 Kids */}
                 <SectionWrapper title="Kids">
-                    <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-1 snap-x snap-mandatory">
                         {kids.map((k) => (
                             <Link key={k.id} href={k.link}>
                                 <Card img={k.image} title={k.title} subtitle={k.text} rounded="2xl" />
