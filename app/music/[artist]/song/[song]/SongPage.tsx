@@ -48,90 +48,90 @@ export default function SongPage() {
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
 
-      React.useEffect(() => {
+    React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
-          .then(res => res.json())
-          .then(data => setGoogleClientId(data.clientId));
-    
+            .then(res => res.json())
+            .then(data => setGoogleClientId(data.clientId));
+
         // Check for stored user info
         const stored = localStorage.getItem('userInfo');
         if (stored) {
-          setUserInfo(JSON.parse(stored));
+            setUserInfo(JSON.parse(stored));
         }
-      }, []);
-    
-      React.useEffect(() => {
+    }, []);
+
+    React.useEffect(() => {
         if (!googleClientId) return;
-    
+
         // Add Google script if not already present
         if (!document.getElementById('google-gsi-script')) {
-          const googleScript = document.createElement('script');
-          googleScript.src = 'https://accounts.google.com/gsi/client';
-          googleScript.async = true;
-          googleScript.defer = true;
-          googleScript.id = 'google-gsi-script';
-          document.body.appendChild(googleScript);
-    
-          googleScript.onload = () => {
-            window.handleCredentialResponse = (response: any) => {
-              if (response.credential) {
-                const data = parseJwt(response.credential);
-                saveUserInfo(data);
-                setUserInfo(data);
-                setTimeout(() => {
-                  router.back();
-                }, 1000);
-              } else {
-                console.error("Error: No Google credential received.");
-              }
+            const googleScript = document.createElement('script');
+            googleScript.src = 'https://accounts.google.com/gsi/client';
+            googleScript.async = true;
+            googleScript.defer = true;
+            googleScript.id = 'google-gsi-script';
+            document.body.appendChild(googleScript);
+
+            googleScript.onload = () => {
+                window.handleCredentialResponse = (response: any) => {
+                    if (response.credential) {
+                        const data = parseJwt(response.credential);
+                        saveUserInfo(data);
+                        setUserInfo(data);
+                        setTimeout(() => {
+                            router.back();
+                        }, 1000);
+                    } else {
+                        console.error("Error: No Google credential received.");
+                    }
+                };
+
+                if (window.google?.accounts?.id) {
+                    window.google.accounts.id.initialize({
+                        client_id: googleClientId,
+                        callback: window.handleCredentialResponse,
+                        cancel_on_tap_outside: false,
+                    });
+
+                    // Only prompt One Tap if not signed in
+                    if (!userInfo) {
+                        window.google.accounts.id.prompt();
+                    }
+                }
             };
-    
-            if (window.google?.accounts?.id) {
-              window.google.accounts.id.initialize({
-                client_id: googleClientId,
-                callback: window.handleCredentialResponse,
-                cancel_on_tap_outside: false,
-              });
-    
-              // Only prompt One Tap if not signed in
-              if (!userInfo) {
-                window.google.accounts.id.prompt();
-              }
-            }
-          };
         } else {
-          // If script already loaded, initialize and prompt as above
-          if (window.google?.accounts?.id) {
-            window.google.accounts.id.initialize({
-              client_id: googleClientId,
-              callback: window.handleCredentialResponse,
-              cancel_on_tap_outside: false,
-            });
-            if (!userInfo) {
-              window.google.accounts.id.prompt();
+            // If script already loaded, initialize and prompt as above
+            if (window.google?.accounts?.id) {
+                window.google.accounts.id.initialize({
+                    client_id: googleClientId,
+                    callback: window.handleCredentialResponse,
+                    cancel_on_tap_outside: false,
+                });
+                if (!userInfo) {
+                    window.google.accounts.id.prompt();
+                }
             }
-          }
         }
-      }, [googleClientId, userInfo]);
-    
-      const parseJwt = (token: string) => {
+    }, [googleClientId, userInfo]);
+
+    const parseJwt = (token: string) => {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
+            atob(base64)
+                .split('')
+                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
         );
         return JSON.parse(jsonPayload);
-      };
-    
-      const saveUserInfo = (data: any) => {
+    };
+
+    const saveUserInfo = (data: any) => {
         localStorage.setItem('userInfo', JSON.stringify({
-          data,
-          provider: "google"
+            data,
+            provider: "google"
         }));
-      };
+    };
 
 
     // Disable background scroll when modal is open
@@ -311,6 +311,7 @@ export default function SongPage() {
                     .join("-");
 
             const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
+
             // 1. Check if file exists in GitHub
             const githubUrl = await checkGithubFileExists(fileName);
             if (githubUrl) {
@@ -318,58 +319,73 @@ export default function SongPage() {
                 return;
             }
 
-
-
             setIsUploading(true);
 
             try {
-                const response = await fetch(
-                    `https://video-downloader-server.fly.dev/download?url=https://www.youtube.com/watch?v=${lyricsVideoId}&type=audio`
+                // 2. Call RapidAPI instead of Flask
+                const res = await fetch(
+                    `https://youtube-mp36.p.rapidapi.com/dl?id=${lyricsVideoId}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "x-rapidapi-key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY as string,
+                            "x-rapidapi-host": "youtube-mp36.p.rapidapi.com",
+                        },
+                    }
                 );
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    setModalMessage(errorData.error || "Failed to convert video to MP3");
+
+                if (!res.ok) {
+                    setModalMessage("Failed to convert video to MP3");
                     setIsUploading(false);
                     return;
                 }
-                const blob = await response.blob();
-                const arrayBuffer = await blob.arrayBuffer();
 
-                // Add metadata using browser-id3-writer
+                const data = await res.json();
+
+                if (data.status !== "ok" || !data.link) {
+                    setModalMessage(data.msg || "Conversion failed");
+                    setIsUploading(false);
+                    return;
+                }
+
+                // 3. Fetch MP3 file as blob
+                const mp3Response = await fetch(data.link);
+                const mp3Blob = await mp3Response.blob();
+                const arrayBuffer = await mp3Blob.arrayBuffer();
+
+                // 4. Add metadata (title, artist, album, cover art)
                 const writer = new ID3Writer(arrayBuffer);
-                writer.setFrame('TIT2', track.name ?? 'Unknown Title')
-                    .setFrame('TPE1', [track.artists[0]?.name ?? "Unknown Artist"])
-                    .setFrame('TALB', track.album?.name ?? "Unknown Album");
+                writer.setFrame("TIT2", track.name ?? "Unknown Title")
+                    .setFrame("TPE1", [track.artists[0]?.name ?? "Unknown Artist"])
+                    .setFrame("TALB", track.album?.name ?? "Unknown Album");
+
                 const coverImageUrl = track.album?.images[0]?.url;
                 if (coverImageUrl) {
                     const coverResponse = await fetch(coverImageUrl);
                     const coverBlob = await coverResponse.blob();
                     const coverArrayBuffer = await coverBlob.arrayBuffer();
-                    (writer as any).setFrame('APIC', {
+                    (writer as any).setFrame("APIC", {
                         type: 3,
                         data: new Uint8Array(coverArrayBuffer),
-                        description: 'Cover',
+                        description: "Cover",
                     });
                 }
+
                 writer.addTag();
                 const taggedBlob = writer.getBlob();
                 const url = window.URL.createObjectURL(taggedBlob);
 
+                // 5. Trigger download in browser
                 const a = document.createElement("a");
-                a.id = "download-link";
                 a.href = url;
                 a.download = fileName;
-                document.body.appendChild(a);
+                a.click();
 
-                document.body.removeChild(a);
                 setDownloadUrl(url);
 
-                // Upload to GitHub using FormData (for formidable)
+                // 6. Upload to GitHub (same as before)
                 const artistName = track.artists[0]?.name || "Unknown Artist";
                 await uploadFileToGithub(artistName, fileName, taggedBlob);
-
-                // After upload, check again and set download URL
-
 
                 setIsUploading(false);
             } catch (err) {
@@ -382,7 +398,6 @@ export default function SongPage() {
         if (lyricsVideoId && track && !downloadUrl) {
             processAudio();
         }
-        // eslint-disable-next-line
     }, [lyricsVideoId, track]);
 
 
