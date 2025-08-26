@@ -300,58 +300,86 @@ export default async function handler(req, res) {
       }
     }
 
+    else if (type === "youtubeToMp3") {
+      const videoId = req.query.videoId;
+      if (!videoId) {
+        return res.status(400).json({ error: "Missing videoId parameter" });
+      }
+      try {
+        const options = {
+          method: "GET",
+          url: "https://youtube-mp36.p.rapidapi.com/dl",
+          params: { id: videoId },
+          headers: {
+            "x-rapidapi-key": process.env.RAPIDAPI_KEY,
+            "x-rapidapi-host": "youtube-mp36.p.rapidapi.com",
+          },
+        };
+        const response = await axios.request(options);
+        if (response.data.status === "ok") {
+          res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+          return res.status(200).json({ downloadLink: response.data.link });
+        } else {
+          return res.status(500).json({ error: response.data.msg || "Failed to get download link" });
+        }
+      } catch (err) {
+        console.error("MP3 Download Error:", err);
+        return res.status(500).json({ error: "Failed to fetch MP3 download link" });
+      }
+    }
+
     else if (type === "lyrics") {
       if (!artistName || !songName) {
-      return res.status(400).json({ error: "Missing artist name or song name" });
+        return res.status(400).json({ error: "Missing artist name or song name" });
       }
 
       try {
-      const lyricsApiUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(decodedArtistName)}/${encodeURIComponent(decodedSongName)}`;
-      let response = await fetch(lyricsApiUrl);
+        const lyricsApiUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(decodedArtistName)}/${encodeURIComponent(decodedSongName)}`;
+        let response = await fetch(lyricsApiUrl);
 
-      let data = await response.json();
-      if (response.ok && data.lyrics) {
+        let data = await response.json();
+        if (response.ok && data.lyrics) {
+          res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+          return res.status(200).json({ lyrics: data.lyrics });
+        }
+
+        // If lyrics.ovh fails, try Genius API
+        const geniusAccessToken = process.env.GENIUS_ACCESS_TOKEN;
+        const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(decodedArtistName + " " + decodedSongName)}`;
+        const geniusResponse = await fetch(searchUrl, {
+          headers: {
+            Authorization: `Bearer ${geniusAccessToken}`,
+          },
+        });
+
+        if (!geniusResponse.ok) {
+          throw new Error("Failed to search Genius");
+        }
+
+        const geniusData = await geniusResponse.json();
+        const hit = geniusData.response.hits?.[0]?.result;
+        if (!hit || !hit.url) {
+          return res.status(404).json({ error: "Lyrics not found" });
+        }
+
+        // Scrape lyrics from Genius page (since API does not provide lyrics directly)
+        const pageRes = await fetch(hit.url);
+        const pageHtml = await pageRes.text();
+        // Extract lyrics from HTML (simple regex, may not be perfect)
+        const lyricsMatch = pageHtml.match(/<div[^>]+data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
+        let lyrics = "";
+        if (lyricsMatch) {
+          lyrics = lyricsMatch.map(div => div.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#x27;/g, "'")).join('\n').trim();
+        }
+        if (!lyrics) {
+          return res.status(404).json({ error: "Lyrics not found" });
+        }
+
         res.setHeader('Cache-Control', 'max-age=31536000, immutable');
-        return res.status(200).json({ lyrics: data.lyrics });
-      }
-
-      // If lyrics.ovh fails, try Genius API
-      const geniusAccessToken = process.env.GENIUS_ACCESS_TOKEN;
-      const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(decodedArtistName + " " + decodedSongName)}`;
-      const geniusResponse = await fetch(searchUrl, {
-        headers: {
-        Authorization: `Bearer ${geniusAccessToken}`,
-        },
-      });
-
-      if (!geniusResponse.ok) {
-        throw new Error("Failed to search Genius");
-      }
-
-      const geniusData = await geniusResponse.json();
-      const hit = geniusData.response.hits?.[0]?.result;
-      if (!hit || !hit.url) {
-        return res.status(404).json({ error: "Lyrics not found" });
-      }
-
-      // Scrape lyrics from Genius page (since API does not provide lyrics directly)
-      const pageRes = await fetch(hit.url);
-      const pageHtml = await pageRes.text();
-      // Extract lyrics from HTML (simple regex, may not be perfect)
-      const lyricsMatch = pageHtml.match(/<div[^>]+data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
-      let lyrics = "";
-      if (lyricsMatch) {
-        lyrics = lyricsMatch.map(div => div.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#x27;/g, "'")).join('\n').trim();
-      }
-      if (!lyrics) {
-        return res.status(404).json({ error: "Lyrics not found" });
-      }
-
-      res.setHeader('Cache-Control', 'max-age=31536000, immutable');
-      return res.status(200).json({ lyrics });
+        return res.status(200).json({ lyrics });
       } catch (err) {
-      console.error("Lyrics API Error:", err);
-      return res.status(500).json({ error: "Failed to fetch lyrics" });
+        console.error("Lyrics API Error:", err);
+        return res.status(500).json({ error: "Failed to fetch lyrics" });
       }
     }
 
@@ -390,56 +418,56 @@ export default async function handler(req, res) {
     }
 
     else if (type === "relatedTracks") {
-  if (!artistName || !songName) {
-    return res.status(400).json({ error: "Missing artist name or song name" });
-  }
+      if (!artistName || !songName) {
+        return res.status(400).json({ error: "Missing artist name or song name" });
+      }
 
-  try {
-    const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
-      decodedArtistName
-    )}&track=${encodeURIComponent(decodedSongName)}&limit=15&api_key=${LAST_FM_API_KEY}&format=json`;
+      try {
+        const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
+          decodedArtistName
+        )}&track=${encodeURIComponent(decodedSongName)}&limit=15&api_key=${LAST_FM_API_KEY}&format=json`;
 
-    const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl);
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch related tracks");
+        if (!response.ok) {
+          throw new Error("Failed to fetch related tracks");
+        }
+
+        const data = await response.json();
+        let tracks = data.similartracks?.track;
+
+        if (!tracks) {
+          return res.status(404).json({ error: "No related tracks found" });
+        }
+
+        if (!Array.isArray(tracks)) {
+          tracks = [tracks]; // normalize
+        }
+
+        if (!tracks.length) {
+          return res.status(404).json({ error: "No related tracks found" });
+        }
+
+        // Just map directly from track.getsimilar results
+        const relatedTracks = tracks.map((track) => ({
+          name: track.name,
+          artist: track.artist.name,
+          url: track.url,
+          image:
+            track.image?.find((img) => img.size === "large")?.["#text"] ||
+            "/placeholder.jpg", // use image from getSimilar or fallback
+        }));
+
+        res.setHeader(
+          "Cache-Control",
+          "s-maxage=2419200, stale-while-revalidate"
+        );
+        return res.status(200).json(relatedTracks);
+      } catch (err) {
+        console.error("Last.fm API Error:", err);
+        return res.status(500).json({ error: "Failed to fetch related tracks" });
+      }
     }
-
-    const data = await response.json();
-    let tracks = data.similartracks?.track;
-
-    if (!tracks) {
-      return res.status(404).json({ error: "No related tracks found" });
-    }
-
-    if (!Array.isArray(tracks)) {
-      tracks = [tracks]; // normalize
-    }
-
-    if (!tracks.length) {
-      return res.status(404).json({ error: "No related tracks found" });
-    }
-
-    // Just map directly from track.getsimilar results
-    const relatedTracks = tracks.map((track) => ({
-      name: track.name,
-      artist: track.artist.name,
-      url: track.url,
-      image:
-        track.image?.find((img) => img.size === "large")?.["#text"] ||
-        "/placeholder.jpg", // use image from getSimilar or fallback
-    }));
-
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=2419200, stale-while-revalidate"
-    );
-    return res.status(200).json(relatedTracks);
-  } catch (err) {
-    console.error("Last.fm API Error:", err);
-    return res.status(500).json({ error: "Failed to fetch related tracks" });
-  }
-}
 
     // Artist details endpoints 
     else if (type === "artistDetails") {

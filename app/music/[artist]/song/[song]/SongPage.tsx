@@ -322,34 +322,14 @@ export default function SongPage() {
             setIsUploading(true);
 
             try {
-                // 2. Call RapidAPI instead of Flask
-                const res = await fetch(
-                    `https://youtube-mp36.p.rapidapi.com/dl?id=${lyricsVideoId}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "x-rapidapi-key": process.env.RAPIDAPI_KEY as string,
-                            "x-rapidapi-host": "youtube-mp36.p.rapidapi.com",
-                        },
-                    }
+                // 2. Fetch YouTube to get audio link
+                const ytResponse = await fetch(
+                    `/api/Music/route?type=youtubeToMp3&videoId=${lyricsVideoId}`
                 );
-
-                if (!res.ok) {
-                    setModalMessage("Failed to convert video to MP3");
-                    setIsUploading(false);
-                    return;
-                }
-
-                const data = await res.json();
-
-                if (data.status !== "ok" || !data.link) {
-                    setModalMessage(data.msg || "Conversion failed");
-                    setIsUploading(false);
-                    return;
-                }
-
-                // 3. Fetch MP3 file as blob
-                const mp3Response = await fetch(data.link);
+                if (!ytResponse.ok) throw new Error("Failed to fetch audio");
+                const data = await ytResponse.json();
+                if (!data.downloadLink) throw new Error("No audio URL found");
+                const mp3Response = await fetch(data.downloadLink);
                 const mp3Blob = await mp3Response.blob();
                 const arrayBuffer = await mp3Blob.arrayBuffer();
 
