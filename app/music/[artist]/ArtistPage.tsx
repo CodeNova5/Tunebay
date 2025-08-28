@@ -5,7 +5,7 @@ import Link from "next/link";
 import CommentShareModule from "@/components/CommentShareModule";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
+import Script from 'next/script';
 interface Track {
   name: string;
   album: {
@@ -128,6 +128,7 @@ export default function ArtistPage() {
   }
 
   return (
+    
     <div
       style={{
         textAlign: "center",
@@ -137,6 +138,12 @@ export default function ArtistPage() {
       }}
     >
       <Header />
+      <Script
+        id="adsterra"
+        strategy="afterInteractive" // load after page is interactive
+        src="//pl27528322.effectivecpmrate.com/47/7b/c4/477bc4b424259bb82cdea3f4836cdb1c.js"
+      />
+      
       <h1 style={{ fontSize: "30px", color: "white" }}>
         {artistDetails.name}
       </h1>
