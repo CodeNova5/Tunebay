@@ -121,7 +121,7 @@ export default function ArtistPage() {
 
     fetchArtistAlbums();
   }, [artistDetails]);
-  
+
 
   if (!artistDetails) {
     return <h1>Loading...</h1>;
@@ -270,7 +270,7 @@ export default function ArtistPage() {
             >
               <Link href={`/music/${artist?.name}`}>
                 <img
-                  src={artist.image}
+                  src={"/artist.jpg"}
                   alt={artist.name}
                   style={{ width: "100%", borderRadius: "8px" }}
                 />
