@@ -95,6 +95,34 @@ export default function ArtistPage() {
     fetchArtistData(); // ✅ actually call it
   }, [artist]);
 
+  // fetch albums only after artistDetails is set
+  React.useEffect(() => {
+    if (!artistDetails?.id) return;
+
+    async function fetchArtistAlbums() {
+      try {
+        const albumsResponse = await fetch(
+          `/api/Music/route?type=artistAlbums&artistId=${encodeURIComponent(
+            artistDetails.id
+          )}`
+        );
+        if (!albumsResponse.ok) {
+          const errorData = await albumsResponse.json();
+          setError(errorData.error || "Failed to fetch artist albums");
+          return;
+        }
+        const albumsData = await albumsResponse.json();
+        setArtistAlbums(albumsData);
+      } catch (err) {
+        console.error("Error fetching albums:", err);
+        setError("An unexpected error occurred while fetching albums");
+      }
+    }
+
+    fetchArtistAlbums();
+  }, [artistDetails]);
+  
+
   if (!artistDetails) {
     return <h1>Loading...</h1>;
   }
