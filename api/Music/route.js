@@ -561,6 +561,7 @@ export default async function handler(req, res) {
               const artist = spotifyData.artists?.items?.[0];
 
               return {
+                id: artist.id,
                 name: name,
                 image: artist?.images?.[0]?.url || "/placeholder.jpg",
                 url: artist?.external_urls?.spotify || null,
