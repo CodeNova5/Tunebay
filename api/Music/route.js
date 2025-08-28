@@ -510,80 +510,47 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Failed to fetch artist details" });
       }
     }
-    else if (type === "relatedArtists") {
 
-      if (!artistName) {
-        return res.status(400).json({ error: "Missing artist name" });
-      }
+   else if (type === "relatedArtists") {
+  if (!artistName) {
+    return res.status(400).json({ error: "Missing artist name" });
+  }
 
-      try {
-        // Fetch related artists from Last.fm
-        const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
-          decodedArtistName
-        )}&limit=10`;
+  try {
+    // Fetch related artists from Last.fm
+    const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
+      decodedArtistName
+    )}&limit=10&format=json&api_key=${LAST_FM_API_KEY2}`;
 
-        const lastFmResponse = await fetchWithLastFmKeys(
-          lastFmApiUrl,
-          () => LAST_FM_API_KEY,
-          () => LAST_FM_API_KEY2
-        );
+    const lastFmResponse = await fetch(lastFmApiUrl);
 
-        if (!lastFmResponse.ok) {
-          throw new Error("Failed to fetch related artists from Last.fm");
-        }
-
-        const lastFmData = await lastFmResponse.json();
-
-        if (!lastFmData.similarartists?.artist?.length) {
-          return res.status(404).json({ error: "No related artists found" });
-        }
-
-        const relatedArtistNames = lastFmData.similarartists.artist.map((artist) => artist.name);
-
-        // Fetch artist images from Spotify
-        const accessToken = await getArtistAccessToken();
-        const relatedArtists = await Promise.all(
-          relatedArtistNames.map(async (name) => {
-            try {
-              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-                name
-              )}&type=artist&limit=1`;
-
-              const spotifyResponse = await fetch(spotifyApiUrl, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-
-              if (!spotifyResponse.ok) {
-                throw new Error(`Failed to fetch artist details for ${name}`);
-              }
-
-              const spotifyData = await spotifyResponse.json();
-              const artist = spotifyData.artists?.items?.[0];
-
-              return {
-                id: artist.id,
-                name: name,
-                image: artist?.images?.[0]?.url || "/placeholder.jpg",
-                url: artist?.external_urls?.spotify || null,
-              };
-            } catch (err) {
-              console.error(`Spotify API Error for artist ${name}:`, err);
-              return {
-                name: name,
-                image: "/placeholder.jpg",
-                url: null,
-              };
-            }
-          })
-        );
-
-        res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
-        return res.status(200).json(relatedArtists);
-      } catch (err) {
-        console.error("API Error:", err);
-        return res.status(500).json({ error: "Failed to fetch related artists" });
-      }
+    if (!lastFmResponse.ok) {
+      throw new Error("Failed to fetch related artists from Last.fm");
     }
+
+    const lastFmData = await lastFmResponse.json();
+
+    if (!lastFmData.similarartists?.artist?.length) {
+      return res.status(404).json({ error: "No related artists found" });
+    }
+
+    // Map Last.fm response to a cleaner format
+    const relatedArtists = lastFmData.similarartists.artist.map((artist) => ({
+      name: artist.name,
+      image: artist.image?.[2]?.["#text"] || "/placeholder.jpg", // Last.fm images are an array, [2] = "medium"
+      url: artist.url || null,
+    }));
+
+    res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
+    return res.status(200).json(relatedArtists);
+  } catch (err) {
+    console.error("Last.fm API Error:", err);
+    return res.status(500).json({ error: "Failed to fetch related artists" });
+  }
+}
+
+
+
     else if (type === "artistAlbums") {
       if (!artistId) {
         return res.status(400).json({ error: "Missing artist Id" });
