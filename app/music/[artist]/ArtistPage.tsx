@@ -270,7 +270,7 @@ export default function ArtistPage() {
             >
               <Link href={`/music/${artist?.name}`}>
                 <img
-                  src={"/artist.jpg"}
+                  src={"/artist.svg"}
                   alt={artist.name}
                   style={{ width: "100%", borderRadius: "8px" }}
                 />
