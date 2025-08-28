@@ -47,6 +47,7 @@ export default function SongPage() {
     const router = useRouter();
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
+    const adUrl = "https://www.effectivecpmrate.com/gyn001wg?key=51f69093edbd86289d0429cd867cdd9c";
 
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
@@ -359,7 +360,7 @@ export default function SongPage() {
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = fileName;
-                
+
 
                 setDownloadUrl(url);
 
@@ -625,6 +626,29 @@ export default function SongPage() {
                 </div>
             )}
             <CommentShareModule track={track} album={undefined} artist={undefined} playlist={undefined} />
+            <a
+                href={adUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    display: 'inline-block',
+                    padding: '12px 24px',
+                    backgroundColor: '#ff5722',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    transition: 'background 0.3s',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e64a19')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ff5722')}
+            >
+                ✅ Check Out This Offer (Ad)
+            </a>
+            <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
+                This link is sponsored
+            </p>
+
             {/* Lyrics Section */}
             <div id="lyrics-container" style={{ marginTop: "20px", textAlign: "left" }}>
                 <h2 style={{ fontSize: "25px", margin: "10px 0" }} >Lyrics</h2>
