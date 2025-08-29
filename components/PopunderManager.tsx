@@ -17,7 +17,7 @@ export default function PopunderManager() {
     if (visits >= 5 && (!lastShown || now - parseInt(lastShown) > interval)) {
       // Inject Adsterra popunder script
       const script = document.createElement("script");
-      script.src = SMART_LINK; // replace with your Adsterra code
+      script.src = "//pl27533345.revenuecpmgate.com/8d/fe/75/8dfe75112dc3022bae089ecea2370b77.js"; // replace with your Adsterra code
       document.body.appendChild(script);
 
       localStorage.setItem("popunderLastShown", now.toString());
