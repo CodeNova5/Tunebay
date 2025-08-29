@@ -422,8 +422,10 @@ export default function SongPage() {
             <Header />
             <Script
                 id="adsterra"
-                strategy="afterInteractive" // load after page is interactive
                 src="//pl27528322.effectivecpmrate.com/47/7b/c4/477bc4b424259bb82cdea3f4836cdb1c.js"
+            />
+            <Script
+                src="//pl27533345.effectivecpmrate.com/8d/fe/75/8dfe75112dc3022bae089ecea2370b77.js"
             />
             <div style={{ fontSize: "25px", fontWeight: "bold" }}>
                 <h1>{track.name} by </h1>
