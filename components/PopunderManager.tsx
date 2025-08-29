@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { SMART_LINK } from "@/config";
+
 
 export default function PopunderManager() {
   useEffect(() => {
