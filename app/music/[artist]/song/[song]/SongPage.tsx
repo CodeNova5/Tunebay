@@ -12,7 +12,8 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import Script from 'next/script';
 import RedirectModal from "@/components/RedirectModal";
-
+import { SMART_LINK } from "@/config";
+import PopunderManager from "@/components/PopunderManager";
 declare global {
     interface Window {
         google: any;
@@ -49,7 +50,6 @@ export default function SongPage() {
     const router = useRouter();
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
-    const adUrl = "https://www.revenuecpmgate.com/k1kkvf6k?key=bae779dbd74142d952921c79b005ec0a";
     const [showModal, setShowModal] = React.useState(false);
 
     React.useEffect(() => {
@@ -544,7 +544,7 @@ export default function SongPage() {
 
             {showModal && (
                 <RedirectModal
-                    targetUrl="https://www.revenuecpmgate.com/k1kkvf6k?key=bae779dbd74142d952921c79b005ec0a"
+                    targetUrl={SMART_LINK}
                     onClose={() => setShowModal(false)}
                 />
             )}
@@ -643,7 +643,7 @@ export default function SongPage() {
             )}
             <CommentShareModule track={track} album={undefined} artist={undefined} playlist={undefined} />
             <a
-                href={adUrl}
+                href={SMART_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -661,6 +661,9 @@ export default function SongPage() {
             >
                 ✅ Check Out This Offer (Ad)
             </a>
+
+            <PopunderManager />
+            
             <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
                 This link is sponsored
             </p>
