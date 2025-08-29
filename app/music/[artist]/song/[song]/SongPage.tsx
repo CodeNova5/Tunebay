@@ -10,7 +10,7 @@ import Footer from "@/components/Footer";
 import 'react-h5-audio-player/lib/styles.css';
 import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
-
+import Script from 'next/script';
 declare global {
     interface Window {
         google: any;
@@ -420,6 +420,11 @@ export default function SongPage() {
     return (
         <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
             <Header />
+            <Script
+                id="adsterra"
+                strategy="afterInteractive" // load after page is interactive
+                src="//pl27528322.effectivecpmrate.com/47/7b/c4/477bc4b424259bb82cdea3f4836cdb1c.js"
+            />
             <div style={{ fontSize: "25px", fontWeight: "bold" }}>
                 <h1>{track.name} by </h1>
                 <h2>
