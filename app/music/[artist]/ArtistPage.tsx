@@ -138,11 +138,6 @@ export default function ArtistPage() {
       }}
     >
       <Header />
-      <Script
-        id="adsterra"
-        strategy="afterInteractive" // load after page is interactive
-        src="//pl27528322.effectivecpmrate.com/47/7b/c4/477bc4b424259bb82cdea3f4836cdb1c.js"
-      />
       
       <h1 style={{ fontSize: "30px", color: "white" }}>
         {artistDetails.name}

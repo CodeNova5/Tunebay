@@ -11,6 +11,8 @@ import 'react-h5-audio-player/lib/styles.css';
 import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import Script from 'next/script';
+import RedirectModal from "@/components/RedirectModal";
+
 declare global {
     interface Window {
         google: any;
@@ -47,7 +49,8 @@ export default function SongPage() {
     const router = useRouter();
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
-    const adUrl = "https://www.effectivecpmrate.com/gyn001wg?key=51f69093edbd86289d0429cd867cdd9c";
+    const adUrl = "https://www.revenuecpmgate.com/k1kkvf6k?key=bae779dbd74142d952921c79b005ec0a";
+    const [showModal, setShowModal] = React.useState(false);
 
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
@@ -371,7 +374,7 @@ export default function SongPage() {
                 setIsUploading(false);
             } catch (err) {
                 setModalMessage("An unexpected error occurred");
-                setTimeout(() => setModalMessage(null), 2000);
+                setTimeout(() => setModalMessage(null), 1000);
                 setIsUploading(false);
             }
         }
@@ -420,10 +423,6 @@ export default function SongPage() {
     return (
         <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
             <Header />
-            <Script
-                id="adsterra"
-                src="//pl27528322.effectivecpmrate.com/47/7b/c4/477bc4b424259bb82cdea3f4836cdb1c.js"
-            />
             <Script
                 src="//pl27533345.effectivecpmrate.com/8d/fe/75/8dfe75112dc3022bae089ecea2370b77.js"
             />
@@ -542,6 +541,14 @@ export default function SongPage() {
                     />
                 )}
             </div>
+
+            {showModal && (
+                <RedirectModal
+                    targetUrl="https://www.revenuecpmgate.com/k1kkvf6k?key=bae779dbd74142d952921c79b005ec0a"
+                    onClose={() => setShowModal(false)}
+                />
+            )}
+
             <a
                 onClick={async (e) => {
                     // Ensure the filename does not have "public_comment" attached to it
@@ -562,7 +569,7 @@ export default function SongPage() {
                                             setTimeout(() => {
                                                 setModalMessage(null);
                                                 setIsUploading(false);
-                                            }, 2000);
+                                            }, 1000);
                                             observer.disconnect();
                                         }
                                     });
@@ -573,7 +580,7 @@ export default function SongPage() {
                     }
                     else {
                         setModalMessage("✅ Download has started");
-                        setTimeout(() => setModalMessage(null), 2000);
+                        setTimeout(() => setModalMessage(null), 1000);
                         setIsUploading(false);
                         const fileUrl = downloadUrl;
                         fetch(fileUrl)
@@ -588,6 +595,8 @@ export default function SongPage() {
                             })
                             .catch(console.error);
                     }
+
+                    setShowModal(true);
                 }}
                 style={{
                     display: "inline-block",
