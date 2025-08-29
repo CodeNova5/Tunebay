@@ -10,10 +10,8 @@ import Footer from "@/components/Footer";
 import 'react-h5-audio-player/lib/styles.css';
 import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
-import Script from 'next/script';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
-import PopunderManager from "@/components/PopunderManager";
 declare global {
     interface Window {
         google: any;
@@ -51,6 +49,8 @@ export default function SongPage() {
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
     const [showModal, setShowModal] = React.useState(false);
+
+
 
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
@@ -659,8 +659,6 @@ export default function SongPage() {
             >
                 ✅ Check Out This Offer (Ad)
             </a>
-
-            <PopunderManager />
             
             <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
                 This link is sponsored

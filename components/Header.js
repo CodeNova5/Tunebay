@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
-
+import { useSmartRedirect } from "@/components/useSmartRedirect";
 const Header = () => {
   const [profileImg, setProfileImg] = useState("/images/default-profile.png");
   const [userInfo, setUserInfo] = useState(null);
@@ -16,7 +16,7 @@ const Header = () => {
   const [windowWidth, setWindowWidth] = useState(0);
   const userInfoRef = useRef(null);
   const router = useRouter();
-
+  const redirect = useSmartRedirect();
   useEffect(() => {
     const updateSize = () => setWindowWidth(window.innerWidth);
     updateSize();
@@ -210,6 +210,7 @@ const Header = () => {
             rows="1"
             placeholder="Search songs..."
             value={search}
+            onClick={redirect}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
             style={{
