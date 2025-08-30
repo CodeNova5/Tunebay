@@ -6,7 +6,8 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
-import { Redis } from "@upstash/redis";
+import { redis } from "@/lib/redis";  // ✅ only one client reused
+
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
@@ -174,7 +175,7 @@ else if (type === "songDetails") {
     const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
 
     // 1️⃣ Try cache first
-    const cached = await Redis.get(cacheKey);
+    const cached = await redis.get(cacheKey);
     if (cached) {
       return res.status(200).json(cached);
     }
@@ -214,8 +215,8 @@ else if (type === "songDetails") {
       duration_ms: track.duration_ms,
     };
 
-    // 3️⃣ Save to Redis with TTL (e.g. 1 day = 86400 seconds)
-    await Redis.set(cacheKey, songData, { ex: 86400 });
+    // 3️⃣ Save to redis with TTL (e.g. 1 day = 86400 seconds)
+    await redis.set(cacheKey, songData, { ex: 86400 });
 
     // 4️⃣ Return the fresh data
     return res.status(200).json(songData);
