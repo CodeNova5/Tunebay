@@ -6,6 +6,7 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
+import { Redis } from "@upstash/Redis";
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
@@ -164,81 +165,66 @@ export default async function handler(req, res) {
 
 
     // Example usage in songDetails:
-    else if (type === "songDetails") {
-      if (!artistName || !songName) {
-        return res.status(400).json({ error: "Missing artist name or song name" });
-      }
+else if (type === "songDetails") {
+  if (!artistName || !songName) {
+    return res.status(400).json({ error: "Missing artist name or song name" });
+  }
 
-      try {
-        const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-          `${decodedArtistName} ${decodedSongName}`
-        )}&type=track&limit=1`;
+  try {
+    const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
 
-        const response = await fetchWithSpotifyTokens(
-          apiUrl,
-          getSpotifyAccessToken,
-          getArtistAccessToken
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch song details");
-        }
-
-        const data = await response.json();
-        if (!data.tracks?.items?.length) {
-          return res.status(404).json({ error: "Song not found" });
-        }
-
-        const track = data.tracks.items[0];
-
-        // Prepare the data to cache
-        const cachedData = {
-          name: track.name,
-          artists: track.artists.map((artist) => ({ name: artist.name })),
-          album: {
-            name: track.album.name,
-            images: track.album.images,
-            release_date: track.album.release_date,
-            type: track.album.album_type,
-          },
-          preview_url: track.preview_url,
-          duration_ms: track.duration_ms,
-        };
-
-        // Upload cached data to GitHub
-        try {
-          const cacheForm = new FormData();
-          const cacheBlob = new Blob([JSON.stringify(cachedData, null, 2)], { type: "application/json" });
-          const fileName = `${decodedArtistName}_${decodedSongName}.json`.replace(/\s+/g, "_");
-
-          cacheForm.append("file", cacheBlob, fileName);
-          cacheForm.append("fileName", fileName);
-
-          await fetch(`/api/uploadFile?type=cachedResponse`, {
-            method: "POST",
-            body: cacheForm,
-          });
-        } catch (cacheErr) {
-          console.error("Failed to cache song details:", cacheErr);
-        }
-        res.setHeader('Cache-Control', 'max-age=31536000, immutable');
-        return res.status(200).json({
-          name: track.name,
-          artists: track.artists.map((artist) => ({ name: artist.name })),
-          album: {
-            name: track.album.name,
-            images: track.album.images,
-            release_date: track.album.release_date,
-            type: track.album.album_type,
-          },
-          preview_url: track.preview_url,
-          duration_ms: track.duration_ms,
-        });
-      } catch (err) {
-        console.error("Spotify API Error:", err);
-        return res.status(500).json({ error: "Failed to fetch song details" });
-      }
+    // 1️⃣ Try cache first
+    const cached = await Redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
     }
+
+    // 2️⃣ Fetch from Spotify if not cached
+    const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+      `${decodedArtistName} ${decodedSongName}`
+    )}&type=track&limit=1`;
+
+    const response = await fetchWithSpotifyTokens(
+      apiUrl,
+      getSpotifyAccessToken,
+      getArtistAccessToken
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch song details");
+    }
+
+    const data = await response.json();
+    if (!data.tracks?.items?.length) {
+      return res.status(404).json({ error: "Song not found" });
+    }
+
+    const track = data.tracks.items[0];
+
+    const songData = {
+      name: track.name,
+      artists: track.artists.map((artist) => ({ name: artist.name })),
+      album: {
+        name: track.album.name,
+        images: track.album.images,
+        release_date: track.album.release_date,
+        type: track.album.album_type,
+      },
+      preview_url: track.preview_url,
+      duration_ms: track.duration_ms,
+    };
+
+    // 3️⃣ Save to Redis with TTL (e.g. 1 day = 86400 seconds)
+    await Redis.set(cacheKey, songData, { ex: 86400 });
+
+    // 4️⃣ Return the fresh data
+    return res.status(200).json(songData);
+  } catch (err) {
+    console.error("Spotify API Error:", err);
+    return res.status(500).json({ error: "Failed to fetch song details" });
+  }
+}
+
     else if (type === "clientId") {
       res.status(200).json({ clientId: process.env.GOOGLE_CLIENT_ID });
     }

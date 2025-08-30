@@ -1,2 +1,2 @@
 // config.ts
-export const SMART_LINK = "https://www.revenuecpmgate.com/k1kkvf6k?key=bae779dbd74142d952921c79b005ec0a";
+export const SMART_LINK = "https://www.revenuecpmgate.com/gyn001wg?key=51f69093edbd86289d0429cd867cdd9c";
