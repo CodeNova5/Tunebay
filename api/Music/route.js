@@ -6,7 +6,7 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
-import { Redis } from "@upstash/Redis";
+import { Redis } from "@upstash/redis";
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
