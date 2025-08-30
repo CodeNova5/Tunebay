@@ -175,7 +175,11 @@ export default async function handler(req, res) {
         // 🟢 0. Check in-memory cache first (super fast)
         if (localCache.has(cacheKey)) {
           console.log("local cache hit for", cacheKey);
-          res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=31536000, immutable"
+          );
+
           return res.status(200).json(localCache.get(cacheKey));
         }
 
@@ -184,7 +188,10 @@ export default async function handler(req, res) {
         if (cached) {
           console.log("redis cache hit for", cacheKey);
           localCache.set(cacheKey, cached);
-          res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=31536000, immutable"
+          );
           return res.status(200).json(cached);
         }
 
@@ -228,7 +235,10 @@ export default async function handler(req, res) {
         localCache.set(cacheKey, songData);
 
         // 🟢 4. Set HTTP caching headers (1 Year)
-        res.setHeader("Cache-Control", "s-maxage=31536000, stale-while-revalidate");
+        res.setHeader(
+          "Cache-Control",
+          "public, s-maxage=31536000, immutable"
+        );
 
         return res.status(200).json(songData);
       } catch (err) {
@@ -241,35 +251,67 @@ export default async function handler(req, res) {
     else if (type === "clientId") {
       res.status(200).json({ clientId: process.env.GOOGLE_CLIENT_ID });
     }
-    else if (type === "youtubeMusicVideo") {
 
+
+    else if (type === "youtubeMusicVideo") {
       if (!songName || !artistName) {
         return res.status(400).json({ error: "Missing song name or artist name" });
       }
 
       try {
+        const cacheKey = `youtube:${decodedArtistName}:${decodedSongName}`;
+
+        // 🟢 0. Check in-memory cache first (super fast)
+        if (localCache.has(cacheKey)) {
+          console.log("local cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=31536000, immutable"
+          );
+
+          return res.status(200).json(localCache.get(cacheKey));
+        }
+
+        // 1️⃣ Try Redis cache first
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+          return res.status(200).json(cached);
+        }
+
+        // 2️⃣ Build query & fetch from YouTube API
         const query = `${decodedArtistName} ${decodedSongName} official music video`;
         const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1`;
 
-        const { response, data } = await fetchWithYouTubeAPI(apiUrl, () => YOUTUBE_API_KEY, () => YOUTUBE_API_KEY2);
+        const { response, data } = await fetchWithYouTubeAPI(
+          apiUrl,
+          () => YOUTUBE_API_KEY,
+          () => YOUTUBE_API_KEY2
+        );
 
         if (!response.ok) throw new Error("Failed to fetch YouTube video");
-
-        // data is already parsed, no need to call response.json()
-        console.log(data);
 
         if (!data.items || data.items.length === 0) {
           return res.status(404).json({ error: "No video found for this song" });
         }
 
         const videoId = data.items[0].id.videoId;
-        res.setHeader('Cache-Control', 'max-age=31536000, immutable');
-        return res.status(200).json({ videoId });
+        const videoData = { videoId };
+
+        // 3️⃣ Save result in Redis for 1 year
+        await redis.set(cacheKey, videoData, { ex: 31536000 });
+
+
+        // 4️⃣ Return fresh data w/ long cache headers
+        res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+        return res.status(200).json(videoData);
       } catch (err) {
         console.error("YouTube API Error:", err);
         return res.status(500).json({ error: "Failed to fetch YouTube video" });
       }
     }
+
 
     else if (type === "lyricsVideo") {
       if (!songName || !artistName) {
@@ -277,6 +319,19 @@ export default async function handler(req, res) {
       }
 
       try {
+        const cacheKey = `lyricsVideo:${decodedArtistName}:${decodedSongName}`;
+
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=31536000, immutable"
+          );
+          return res.status(200).json(cached);
+        }
+        // 3️⃣ Fetch from YouTube if not cached
         const query = `${decodedArtistName} ${decodedSongName} lyrics video`;
         const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1`;
 
@@ -284,13 +339,16 @@ export default async function handler(req, res) {
 
         if (!response.ok) throw new Error("Failed to fetch YouTube video");
 
-        // data is already parsed, no need to call response.json()
-        console.log(data);
+
         if (!data.items || data.items.length === 0) {
           return res.status(404).json({ error: "No lyrics video found for this song" });
         }
 
         const videoId = data.items[0].id.videoId;
+        const videoData = { videoId };
+        // 4️⃣ Save to Redis  for 1 Month
+        await redis.set(cacheKey, videoData, { ex: 2592000 });
+
         res.setHeader('Cache-Control', 'max-age=31536000, immutable');
         return res.status(200).json({ videoId });
       } catch (err) {
@@ -298,6 +356,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Failed to fetch YouTube lyrics video" });
       }
     }
+
 
     else if (type === "youtubeToMp3") {
       const videoId = req.query.videoId;
@@ -334,53 +393,21 @@ export default async function handler(req, res) {
 
       try {
         const lyricsApiUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(decodedArtistName)}/${encodeURIComponent(decodedSongName)}`;
-        let response = await fetch(lyricsApiUrl);
+        const response = await fetch(lyricsApiUrl);
+        const data = await response.json();
 
-        let data = await response.json();
         if (response.ok && data.lyrics) {
-          res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+          res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
           return res.status(200).json({ lyrics: data.lyrics });
         }
 
-        // If lyrics.ovh fails, try Genius API
-        const geniusAccessToken = process.env.GENIUS_ACCESS_TOKEN;
-        const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(decodedArtistName + " " + decodedSongName)}`;
-        const geniusResponse = await fetch(searchUrl, {
-          headers: {
-            Authorization: `Bearer ${geniusAccessToken}`,
-          },
-        });
-
-        if (!geniusResponse.ok) {
-          throw new Error("Failed to search Genius");
-        }
-
-        const geniusData = await geniusResponse.json();
-        const hit = geniusData.response.hits?.[0]?.result;
-        if (!hit || !hit.url) {
-          return res.status(404).json({ error: "Lyrics not found" });
-        }
-
-        // Scrape lyrics from Genius page (since API does not provide lyrics directly)
-        const pageRes = await fetch(hit.url);
-        const pageHtml = await pageRes.text();
-        // Extract lyrics from HTML (simple regex, may not be perfect)
-        const lyricsMatch = pageHtml.match(/<div[^>]+data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
-        let lyrics = "";
-        if (lyricsMatch) {
-          lyrics = lyricsMatch.map(div => div.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#x27;/g, "'")).join('\n').trim();
-        }
-        if (!lyrics) {
-          return res.status(404).json({ error: "Lyrics not found" });
-        }
-
-        res.setHeader('Cache-Control', 'max-age=31536000, immutable');
-        return res.status(200).json({ lyrics });
+        return res.status(404).json({ error: "Lyrics not found" });
       } catch (err) {
         console.error("Lyrics API Error:", err);
         return res.status(500).json({ error: "Failed to fetch lyrics" });
       }
     }
+
 
     else if (type === "artistSongs") {
       if (!artistName) {
@@ -388,6 +415,18 @@ export default async function handler(req, res) {
       }
 
       try {
+        const cacheKey = `artistSongs:${decodedArtistName}`;
+
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=86400, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
 
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           decodedArtistName
@@ -407,6 +446,8 @@ export default async function handler(req, res) {
         if (!data.tracks?.items?.length) {
           return res.status(404).json({ error: "No songs found for this artist" });
         }
+        // Cache in Redis for 1 day
+        await redis.set(cacheKey, data.tracks.items, { ex: 86400 });
 
         res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
         return res.status(200).json(data.tracks.items);
@@ -422,6 +463,18 @@ export default async function handler(req, res) {
       }
 
       try {
+        const cacheKey = `relatedTracks:${decodedArtistName}:${decodedSongName}`;
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=2419200, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
+        // 3️⃣ Fetch from Last.fm if not cached
         const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
           decodedArtistName
         )}&track=${encodeURIComponent(decodedSongName)}&limit=15&api_key=${LAST_FM_API_KEY}&format=json`;
@@ -457,6 +510,10 @@ export default async function handler(req, res) {
             "/placeholder.jpg", // use image from getSimilar or fallback
         }));
 
+        // 4️⃣ Save to Redis + local cache for 28 days
+        await redis.set(cacheKey, relatedTracks, { ex: 2419200 });
+
+
         res.setHeader(
           "Cache-Control",
           "s-maxage=2419200, stale-while-revalidate"
@@ -475,6 +532,18 @@ export default async function handler(req, res) {
       }
 
       try {
+        const cacheKey = `artistDetails:${decodedArtistName}`;
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=31536000, immutable"
+          );
+          return res.status(200).json(cached);
+        }
+        // 3️⃣ Fetch from Spotify if not cached
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           decodedArtistName
         )}&type=artist&limit=1`;
@@ -496,7 +565,12 @@ export default async function handler(req, res) {
         }
 
         const artist = data.artists.items[0];
-        res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate");
+        // Cache for 1 month
+        await redis.set(cacheKey, artist, { ex: 2592000 });
+        res.setHeader(
+          "Cache-Control",
+          "public, s-maxage=2592000, immutable"
+        );
         return res.status(200).json({
           name: artist.name,
           id: artist.id,
@@ -572,7 +646,7 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: "No albums found for this artist" });
         }
 
-        res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate");
+        res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
         return res.status(200).json(albumsData.items.map((album) => ({
           name: album.name,
           artists: album.artists.map((artist) => ({
@@ -644,7 +718,19 @@ export default async function handler(req, res) {
     }
 
     else if (type === "topSongs") {
+
       try {
+        const cacheKey = `topSongs`;
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=604,800, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
         const url = `https://ws.audioscrobbler.com/2.0/?method=chart.gettoptracks`;
 
         const { data } = await fetchWithLastFmKeys(
@@ -677,6 +763,12 @@ export default async function handler(req, res) {
               const spotifyData = await spotifyResponse.json();
               const image =
                 spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
+              // Cache for 7 days
+              await redis.set(
+                cacheKey,
+                JSON.stringify({ title, artist, image }), // value must be a string or buffer
+                { ex: 604800 } // expiry in seconds (7 days)
+              );
 
               return { title, artist, image };
             } catch (err) {
@@ -686,7 +778,7 @@ export default async function handler(req, res) {
           })
         );
 
-        res.setHeader("Cache-Control", "s-maxage=432000, stale-while-revalidate");
+        res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(chartItems);
 
       } catch (error) {
@@ -698,6 +790,17 @@ export default async function handler(req, res) {
     else if (type === "trendingArtists") {
 
       try {
+        const cacheKey = `trendingArtists`;
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=604800, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
         // Fetch trending artists from Last.fm
         const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=chart.gettopartists&limit=20`;
         const { response, data } = await fetchWithLastFmKeys(
@@ -729,6 +832,7 @@ export default async function handler(req, res) {
 
               const spotifyData = await spotifyResponse.json();
               const spotifyArtist = spotifyData.artists?.items?.[0];
+              
 
               return {
                 name: artist.name,
@@ -745,8 +849,11 @@ export default async function handler(req, res) {
             }
           })
         );
+        // Cache for 7 days
+        await redis.set(cacheKey, JSON.stringify(trendingArtists), { ex: 604800 });
 
-        res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
+
+        res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(trendingArtists);
       } catch (err) {
         console.error("Last.fm API Error:", err);
@@ -768,6 +875,18 @@ export default async function handler(req, res) {
       }
 
       if (playlistType === "sp") {
+        const cacheKey = `playlist:${playlistId}`;
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=2592000, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
+
         const apiUrl = `https://api.spotify.com/v1/playlists/${playlistId}`;
         const response = await fetchWithSpotifyTokens(
           apiUrl,
@@ -795,12 +914,25 @@ export default async function handler(req, res) {
           artist: { name: item.track.artists[0]?.name || "Unknown Artist" },
           album: { cover_medium: item.track.album.images[0]?.url || "/placeholder.jpg" },
         }));
-
-        res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate");
+        // Cache for 30 days
+        await redis.set(cacheKey, { playlistDetails, tracks }, { ex: 2592000 });
+        res.setHeader("Cache-Control", "public, s-maxage=2592000, stale-while-revalidate");
         return res.status(200).json({ playlistDetails, tracks });
       }
 
       if (playlistType === "dz") {
+        const cacheKey = `deezerPlaylist:${playlistId}`;
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=2592000, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
+        // Fetch Deezer playlist details
         const options = {
           method: "GET",
           url: `https://deezerdevs-deezer.p.rapidapi.com/playlist/${encodeURIComponent(
@@ -827,8 +959,9 @@ export default async function handler(req, res) {
             artist: { name: track.artist.name },
             album: { cover_medium: track.album.cover_medium },
           }));
-
-          res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate");
+          // Cache for 30 days
+          await redis.set(cacheKey, { playlistDetails, tracks }, { ex: 2592000 });
+          res.setHeader("Cache-Control", "public, s-maxage=2592000, stale-while-revalidate");
           return res.status(200).json({ playlistDetails, tracks });
         } catch (error) {
           console.error(error);
