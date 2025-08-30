@@ -6,7 +6,7 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
-import { redis } from "../../lib/redis";  // ✅ only one client reused
+import { redis } from "../../components/redis.js";  // ✅ only one client reused
 
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
