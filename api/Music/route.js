@@ -7,7 +7,7 @@ const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
 import { redis } from "../../components/redis.js";  // ✅ only one client reused
-
+const localCache = new Map(); // Simple in-memory cache
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
@@ -164,67 +164,79 @@ export default async function handler(req, res) {
       return res.status(200).json(json);
     }
 
+    else if (type === "songDetails") {
+      if (!artistName || !songName) {
+        return res.status(400).json({ error: "Missing artist name or song name" });
+      }
 
-    // Example usage in songDetails:
-else if (type === "songDetails") {
-  if (!artistName || !songName) {
-    return res.status(400).json({ error: "Missing artist name or song name" });
-  }
+      try {
+        const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
 
-  try {
-    const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
+        // 🟢 0. Check in-memory cache first (super fast)
+        if (localCache.has(cacheKey)) {
+          console.log("local cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
+          return res.status(200).json(localCache.get(cacheKey));
+        }
 
-    // 1️⃣ Try cache first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json(cached);
+        // 🟢 1. Try Redis cache
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          localCache.set(cacheKey, cached);
+          res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
+          return res.status(200).json(cached);
+        }
+
+        // 🟢 2. Fetch from Spotify if not cached
+        const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+          `${decodedArtistName} ${decodedSongName}`
+        )}&type=track&limit=1`;
+
+        const response = await fetchWithSpotifyTokens(
+          apiUrl,
+          getSpotifyAccessToken,
+          getArtistAccessToken
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch song details");
+        }
+
+        const data = await response.json();
+        if (!data.tracks?.items?.length) {
+          return res.status(404).json({ error: "Song not found" });
+        }
+
+        const track = data.tracks.items[0];
+
+        const songData = {
+          name: track.name,
+          artists: track.artists.map((artist) => ({ name: artist.name })),
+          album: {
+            name: track.album.name,
+            images: track.album.images,
+            release_date: track.album.release_date,
+            type: track.album.album_type,
+          },
+          preview_url: track.preview_url,
+          duration_ms: track.duration_ms,
+        };
+
+        // 🟢 3. Save to Redis + in-memory cache
+        await redis.set(cacheKey, songData, { ex: 31536000 });
+        localCache.set(cacheKey, songData);
+
+        // 🟢 4. Set HTTP caching headers (1 Year)
+        res.setHeader("Cache-Control", "s-maxage=31536000, stale-while-revalidate");
+
+        return res.status(200).json(songData);
+      } catch (err) {
+        console.error("Spotify API Error:", err);
+        return res.status(500).json({ error: "Failed to fetch song details" });
+      }
     }
 
-    // 2️⃣ Fetch from Spotify if not cached
-    const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-      `${decodedArtistName} ${decodedSongName}`
-    )}&type=track&limit=1`;
-
-    const response = await fetchWithSpotifyTokens(
-      apiUrl,
-      getSpotifyAccessToken,
-      getArtistAccessToken
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch song details");
-    }
-
-    const data = await response.json();
-    if (!data.tracks?.items?.length) {
-      return res.status(404).json({ error: "Song not found" });
-    }
-
-    const track = data.tracks.items[0];
-
-    const songData = {
-      name: track.name,
-      artists: track.artists.map((artist) => ({ name: artist.name })),
-      album: {
-        name: track.album.name,
-        images: track.album.images,
-        release_date: track.album.release_date,
-        type: track.album.album_type,
-      },
-      preview_url: track.preview_url,
-      duration_ms: track.duration_ms,
-    };
-
-    // 3️⃣ Save to redis with TTL (e.g. 1 day = 86400 seconds)
-    await redis.set(cacheKey, songData, { ex: 86400 });
-
-    // 4️⃣ Return the fresh data
-    return res.status(200).json(songData);
-  } catch (err) {
-    console.error("Spotify API Error:", err);
-    return res.status(500).json({ error: "Failed to fetch song details" });
-  }
-}
 
     else if (type === "clientId") {
       res.status(200).json({ clientId: process.env.GOOGLE_CLIENT_ID });
@@ -498,43 +510,43 @@ else if (type === "songDetails") {
       }
     }
 
-   else if (type === "relatedArtists") {
-  if (!artistName) {
-    return res.status(400).json({ error: "Missing artist name" });
-  }
+    else if (type === "relatedArtists") {
+      if (!artistName) {
+        return res.status(400).json({ error: "Missing artist name" });
+      }
 
-  try {
-    // Fetch related artists from Last.fm
-    const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
-      decodedArtistName
-    )}&limit=10&format=json&api_key=${LAST_FM_API_KEY2}`;
+      try {
+        // Fetch related artists from Last.fm
+        const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
+          decodedArtistName
+        )}&limit=10&format=json&api_key=${LAST_FM_API_KEY2}`;
 
-    const lastFmResponse = await fetch(lastFmApiUrl);
+        const lastFmResponse = await fetch(lastFmApiUrl);
 
-    if (!lastFmResponse.ok) {
-      throw new Error("Failed to fetch related artists from Last.fm");
+        if (!lastFmResponse.ok) {
+          throw new Error("Failed to fetch related artists from Last.fm");
+        }
+
+        const lastFmData = await lastFmResponse.json();
+
+        if (!lastFmData.similarartists?.artist?.length) {
+          return res.status(404).json({ error: "No related artists found" });
+        }
+
+        // Map Last.fm response to a cleaner format
+        const relatedArtists = lastFmData.similarartists.artist.map((artist) => ({
+          name: artist.name,
+          image: artist.image?.[2]?.["#text"] || "/placeholder.jpg", // Last.fm images are an array, [2] = "medium"
+          url: artist.url || null,
+        }));
+
+        res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
+        return res.status(200).json(relatedArtists);
+      } catch (err) {
+        console.error("Last.fm API Error:", err);
+        return res.status(500).json({ error: "Failed to fetch related artists" });
+      }
     }
-
-    const lastFmData = await lastFmResponse.json();
-
-    if (!lastFmData.similarartists?.artist?.length) {
-      return res.status(404).json({ error: "No related artists found" });
-    }
-
-    // Map Last.fm response to a cleaner format
-    const relatedArtists = lastFmData.similarartists.artist.map((artist) => ({
-      name: artist.name,
-      image: artist.image?.[2]?.["#text"] || "/placeholder.jpg", // Last.fm images are an array, [2] = "medium"
-      url: artist.url || null,
-    }));
-
-    res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
-    return res.status(200).json(relatedArtists);
-  } catch (err) {
-    console.error("Last.fm API Error:", err);
-    return res.status(500).json({ error: "Failed to fetch related artists" });
-  }
-}
 
 
 
