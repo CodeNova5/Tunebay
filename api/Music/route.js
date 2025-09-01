@@ -12,7 +12,7 @@ let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
 import axios from "axios";
-import SongCache from "@/models/songCache";
+import SongCache from "../../models/songCache.js";
 import { connectDB } from "@/lib/mongodb";
 
 let artistTokenExpiresAt = 0;
