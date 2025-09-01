@@ -180,18 +180,6 @@ export default async function handler(req, res) {
           const cachedRedis = await redis.get(cacheKey);
           if (cachedRedis) {
             console.log("✅ Redis cache hit for", cacheKey);
-            // save to mongodb
-            await connectDB();
-            const mongoCache = await SongCache.findOne({ cacheKey });
-            if (!mongoCache) {
-              // 🔄 Save new cache
-              await SongCache.updateOne(
-                { cacheKey },
-                { $set: { data: songData, createdAt: new Date() } },
-                { upsert: true }
-              );
-
-            }
             res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
             return res.status(200).json(JSON.parse(cachedRedis));
           }
