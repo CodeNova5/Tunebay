@@ -269,23 +269,21 @@ export default async function handler(req, res) {
       try {
         const cacheKey = `youtube:${decodedArtistName}:${decodedSongName}`;
 
-        // 🟢 0. Check in-memory cache first (super fast)
-        if (localCache.has(cacheKey)) {
-          console.log("local cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=31536000, immutable"
-          );
-
-          return res.status(200).json(localCache.get(cacheKey));
-        }
-
-        // 1️⃣ Try Redis cache first
+        //  Try Redis cache first
         const cached = await redis.get(cacheKey);
-        if (cached) {
+        if (cached) {      
           console.log("cache hit for", cacheKey);
           res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
           return res.status(200).json(cached);
+        }
+
+        // Try mongodb cache next
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache)  {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=7776000, immutable");
+          return res.status(200).json(mongoCache.data);
         }
 
         // 2️⃣ Build query & fetch from YouTube API
@@ -307,12 +305,15 @@ export default async function handler(req, res) {
         const videoId = data.items[0].id.videoId;
         const videoData = { videoId };
 
-        // 3️⃣ Save result in Redis for 1 year
-        await redis.set(cacheKey, videoData, { ex: 31536000 });
-
-
+        // 3️⃣ Save result in Redis for 3months + MongoDB
+        await redis.set(cacheKey, videoData, { ex: 7776000});
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: videoData, createdAt: new Date() } },
+          { upsert: true }
+        );
         // 4️⃣ Return fresh data long cache headers
-        res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+        res.setHeader("Cache-Control", "public, s-maxage=7776000, immutable");
         return res.status(200).json(videoData);
       } catch (err) {
         console.error("YouTube API Error:", err);
@@ -339,6 +340,15 @@ export default async function handler(req, res) {
           );
           return res.status(200).json(cached);
         }
+        // Try mongodb cache next
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+          return res.status(200).json(mongoCache.data);
+        }
+
         // 3️⃣ Fetch from YouTube if not cached
         const query = `${decodedArtistName} ${decodedSongName} lyrics video`;
         const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1`;
@@ -356,7 +366,12 @@ export default async function handler(req, res) {
         const videoData = { videoId };
         // 4️⃣ Save to Redis  for 1 Month
         await redis.set(cacheKey, videoData, { ex: 2592000 });
-
+        // 5️⃣ Save to MongoDB
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: videoData, createdAt: new Date() } },
+          { upsert: true }
+        );
         res.setHeader('Cache-Control', 'max-age=31536000, immutable');
         return res.status(200).json({ videoId });
       } catch (err) {
@@ -426,32 +441,7 @@ export default async function handler(req, res) {
         const cacheKey = `artistSongs:${decodedArtistName}`;
         let artistSongs = null;
 
-        // 🔹 1. Try Redis first
-        try {
-          const cachedRedis = await redis.get(cacheKey);
-          if (cachedRedis) {
-            console.log("✅ Redis cache hit for", cacheKey);
-            const parsedData = JSON.parse(cachedRedis);
-
-            // sync to MongoDB if not already there
-            await connectDB();
-            const mongoCache = await SongCache.findOne({ cacheKey });
-            if (!mongoCache) {
-              await SongCache.updateOne(
-                { cacheKey },
-                { $set: { data: parsedData, createdAt: new Date() } },
-                { upsert: true }
-              );
-            }
-
-            res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
-            return res.status(200).json(parsedData);
-          }
-        } catch (redisErr) {
-          console.warn("⚠️ Redis unavailable, falling back to MongoDB:", redisErr.message);
-        }
-
-        // 🔹 2. Try MongoDB
+        //  Try MongoDB cache first
         await connectDB();
         const mongoCache = await SongCache.findOne({ cacheKey });
         if (mongoCache) {
@@ -459,6 +449,20 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
+
+        // 🔹 1. Try Redis next
+        try {
+          const cachedRedis = await redis.get(cacheKey);
+          if (cachedRedis) {
+            console.log("✅ Redis cache hit for", cacheKey);
+            res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
+            return res.status(200).json(cachedRedis);
+          }
+        } catch (redisErr) {
+          console.warn("⚠️ Redis unavailable, falling back to Spotify:", redisErr.message);
+        }
+
+       
 
         // 🔹 3. Fetch from Spotify
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
@@ -519,6 +523,16 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `relatedTracks:${decodedArtistName}:${decodedSongName}`;
+        
+        // Try MongoDB cache first
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
+        }
+        
         // 2️⃣ Try Redis cache next
         const cached = await redis.get(cacheKey);
         if (cached) {
@@ -563,7 +577,13 @@ export default async function handler(req, res) {
 
         // 4️⃣ Save to Redis + local cache for 28 days
         await redis.set(cacheKey, relatedTracks, { ex: 2419200 });
-
+        // 5️⃣ Save to MongoDB
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: relatedTracks, createdAt: new Date() } },
+          { upsert: true }
+        );
+        
 
         res.setHeader(
           "Cache-Control",
