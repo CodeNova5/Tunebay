@@ -175,7 +175,6 @@ export default async function handler(req, res) {
         const cached = await redis.get(cacheKey);
         if (cached) {
           console.log("redis cache hit for", cacheKey);
-          localCache.set(cacheKey, cached);
           res.setHeader(
             "Cache-Control",
             "public, s-maxage=31536000, immutable"

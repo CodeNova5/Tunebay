@@ -12,6 +12,7 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
+import Image from "next/image";
 declare global {
     interface Window {
         google: any;
@@ -422,15 +423,20 @@ export default function SongPage() {
     return (
         <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
             <Header />
-           
+
             <div style={{ fontSize: "25px", fontWeight: "bold" }}>
                 <h1>{track.name} by </h1>
                 <h2>
                     {track.artists.map((a) => a.name).join(", ")}
                 </h2>
             </div>
-            <img src={track.image} alt={track.name} width="300" />
-
+            <Image
+                src={track.image || "/placeholder.jpg"}
+                alt={track.name}
+                width={300}
+                height={300}
+                priority
+            />
             {/* Song Details Table */}
             <table style={{ margin: "20px auto", borderCollapse: "collapse", width: "80%" }}>
                 <tbody>
@@ -658,7 +664,7 @@ export default function SongPage() {
             >
                 ✅ Check Out This Offer (Ad)
             </a>
-            
+
             <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
                 This link is sponsored
             </p>
