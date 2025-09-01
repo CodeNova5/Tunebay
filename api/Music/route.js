@@ -12,6 +12,8 @@ let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
 import axios from "axios";
+import SongCache from "@/models/songCache";
+import { connectDB } from "@/lib/mongodb";
 
 let artistTokenExpiresAt = 0;
 
@@ -171,18 +173,43 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
-        // 🟢 1. Try Redis cache
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=31536000, immutable"
-          );
-          return res.status(200).json(cached);
+        let songData = null;
+
+        // 🟢 1. Try Redis first
+        try {
+          const cachedRedis = await redis.get(cacheKey);
+          if (cachedRedis) {
+            console.log("✅ Redis cache hit for", cacheKey);
+            // save to mongodb
+            await connectDB();
+            const mongoCache = await SongCache.findOne({ cacheKey });
+            if (!mongoCache) {
+              // 🔄 Save new cache
+              await SongCache.updateOne(
+                { cacheKey },
+                { $set: { data: songData, createdAt: new Date() } },
+                { upsert: true }
+              );
+
+            }
+            res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+            return res.status(200).json(JSON.parse(cachedRedis));
+          }
+        } catch (redisErr) {
+          console.warn("⚠️ Redis unavailable, falling back to MongoDB:", redisErr.message);
         }
 
-        // 🟢 2. Fetch from Spotify if not cached
+        // 🟡 2. Try MongoDB cache
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("✅ MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+          return res.status(200).json(mongoCache.data);
+        }
+
+
+        // 🔵 3. Fetch from Spotify if not cached anywhere
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           `${decodedArtistName} ${decodedSongName}`
         )}&type=track&limit=1`;
@@ -204,29 +231,36 @@ export default async function handler(req, res) {
 
         const track = data.tracks.items[0];
 
-        const songData = {
+        songData = {
           name: track.name,
           artists: track.artists.map((artist) => ({ name: artist.name })),
           album: {
             name: track.album.name,
             images: track.album.images,
             release_date: track.album.release_date,
-            type: track.album.album_type,
           },
-          preview_url: track.preview_url,
           duration_ms: track.duration_ms,
         };
-        // 🟢 3. Save to Redis + in-memory cache
-        await redis.set(cacheKey, songData, { ex: 31536000 });
 
+        // 🔄 4. Save to Redis 1 month (if available)
+        try {
+          await redis.set(cacheKey, JSON.stringify(songData), { ex: 2592000 });
+        } catch (redisErr) {
+          console.warn("⚠️ Failed to write to Redis:", redisErr.message);
+        }
 
-        // 🟢 4. Set HTTP caching headers (1 Year)
-        res.setHeader(
-          "Cache-Control",
-          "public, s-maxage=31536000, immutable"
+        // 🔄 Save new cache
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: songData, createdAt: new Date() } },
+          { upsert: true }
         );
 
+
+        // ✅ 6. Respond
+        res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
         return res.status(200).json(songData);
+
       } catch (err) {
         console.error("Spotify API Error:", err);
         return res.status(500).json({ error: "Failed to fetch song details" });
@@ -441,10 +475,10 @@ export default async function handler(req, res) {
           albumImage: track.album.images[0]?.url || "/placeholder.jpg",
         }));
 
-        // Cache slimmed-down data in Redis
-        await redis.set(cacheKey, JSON.stringify(songs), { ex: 86400 });
+        // Cache for 1 week
+        await redis.set(cacheKey, JSON.stringify(songs), { ex: 604800 });
 
-        res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
+        res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(songs);
       } catch (err) {
         console.error("Spotify API Error:", err);
