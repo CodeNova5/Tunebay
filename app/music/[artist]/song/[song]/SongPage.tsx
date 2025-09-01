@@ -22,11 +22,10 @@ declare global {
 interface Track {
     name: string;
     artists: { name: string }[];
+    image: string;
     album: {
         name: string;
-        images: { url: string }[];
         release_date: string;
-        type: string;
     };
     preview_url: string | null;
     duration_ms: number;
@@ -343,7 +342,7 @@ export default function SongPage() {
                     .setFrame("TPE1", [track.artists[0]?.name ?? "Unknown Artist"])
                     .setFrame("TALB", track.album?.name ?? "Unknown Album");
 
-                const coverImageUrl = track.album?.images[0]?.url;
+                const coverImageUrl = track.image;
                 if (coverImageUrl) {
                     const coverResponse = await fetch(coverImageUrl);
                     const coverBlob = await coverResponse.blob();
@@ -430,7 +429,7 @@ export default function SongPage() {
                     {track.artists.map((a) => a.name).join(", ")}
                 </h2>
             </div>
-            <img src={track.album.images[0]?.url || "/placeholder.jpg"} alt={track.name} width="300" />
+            <img src={track.image} alt={track.name} width="300" />
 
             {/* Song Details Table */}
             <table style={{ margin: "20px auto", borderCollapse: "collapse", width: "80%" }}>
@@ -697,7 +696,7 @@ export default function SongPage() {
                     >
                         <Link href={`/music/${encodeURIComponent(song.artists[0]?.name)}/song/${encodeURIComponent(song.name)}`}>
                             <img
-                                src={song.album.images[0]?.url || "/placeholder.jpg"}
+                                src={song.albumImage || "/placeholder.jpg"}
                                 alt={song.name}
                                 style={{
                                     width: "100px",

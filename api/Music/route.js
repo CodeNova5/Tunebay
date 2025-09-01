@@ -171,18 +171,6 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
-
-        // 🟢 0. Check in-memory cache first (super fast)
-        if (localCache.has(cacheKey)) {
-          console.log("local cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=31536000, immutable"
-          );
-
-          return res.status(200).json(localCache.get(cacheKey));
-        }
-
         // 🟢 1. Try Redis cache
         const cached = await redis.get(cacheKey);
         if (cached) {
@@ -220,11 +208,10 @@ export default async function handler(req, res) {
         const songData = {
           name: track.name,
           artists: track.artists.map((artist) => ({ name: artist.name })),
+          image: track.album.images[0]?.url || "/placeholder.jpg", // note: singular "image"
           album: {
             name: track.album.name,
-            images: track.album.images,
             release_date: track.album.release_date,
-            type: track.album.album_type,
           },
           preview_url: track.preview_url,
           duration_ms: track.duration_ms,
@@ -232,7 +219,7 @@ export default async function handler(req, res) {
 
         // 🟢 3. Save to Redis + in-memory cache
         await redis.set(cacheKey, songData, { ex: 31536000 });
-        localCache.set(cacheKey, songData);
+
 
         // 🟢 4. Set HTTP caching headers (1 Year)
         res.setHeader(
@@ -303,7 +290,7 @@ export default async function handler(req, res) {
         await redis.set(cacheKey, videoData, { ex: 31536000 });
 
 
-        // 4️⃣ Return fresh data w/ long cache headers
+        // 4️⃣ Return fresh data long cache headers
         res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
         return res.status(200).json(videoData);
       } catch (err) {
@@ -409,53 +396,63 @@ export default async function handler(req, res) {
     }
 
 
-    else if (type === "artistSongs") {
-      if (!artistName) {
-        return res.status(400).json({ error: "Missing artist name" });
-      }
+else if (type === "artistSongs") {
+  if (!artistName) {
+    return res.status(400).json({ error: "Missing artist name" });
+  }
 
-      try {
-        const cacheKey = `artistSongs:${decodedArtistName}`;
+  try {
+    const cacheKey = `artistSongs:${decodedArtistName}`;
 
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=86400, stale-while-revalidate"
-          );
-          return res.status(200).json(cached);
-        }
-
-        const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-          decodedArtistName
-        )}&type=track&limit=30`;
-
-        const response = await fetchWithSpotifyTokens(
-          apiUrl,
-          getSpotifyAccessToken,
-          getArtistAccessToken
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch artist's songs");
-        }
-
-        const data = await response.json();
-        if (!data.tracks?.items?.length) {
-          return res.status(404).json({ error: "No songs found for this artist" });
-        }
-        // Cache in Redis for 1 day
-        await redis.set(cacheKey, data.tracks.items, { ex: 86400 });
-
-        res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
-        return res.status(200).json(data.tracks.items);
-      } catch (err) {
-        console.error("Spotify API Error:", err);
-        return res.status(500).json({ error: "Failed to fetch artist's songs" });
-      }
+    // 🔹 Try Redis cache
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      console.log("redis cache hit for", cacheKey);
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=86400, stale-while-revalidate"
+      );
+      return res.status(200).json(JSON.parse(cached));
     }
+
+    const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+      decodedArtistName
+    )}&type=track&limit=30`;
+
+    const response = await fetchWithSpotifyTokens(
+      apiUrl,
+      getSpotifyAccessToken,
+      getArtistAccessToken
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch artist's songs");
+    }
+
+    const data = await response.json();
+    if (!data.tracks?.items?.length) {
+      return res.status(404).json({ error: "No songs found for this artist" });
+    }
+
+    // 🔹 Only keep required fields
+    const songs = data.tracks.items.map((track) => ({
+      id: track.id,
+      name: track.name,
+      artists: track.artists.map((artist) => ({ name: artist.name })),
+      albumImage: track.album.images[0]?.url || "/placeholder.jpg",
+    }));
+
+    // Cache slimmed-down data in Redis
+    await redis.set(cacheKey, JSON.stringify(songs), { ex: 86400 });
+
+    res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
+    return res.status(200).json(songs);
+  } catch (err) {
+    console.error("Spotify API Error:", err);
+    return res.status(500).json({ error: "Failed to fetch artist's songs" });
+  }
+}
+
 
     else if (type === "relatedTracks") {
       if (!artistName || !songName) {
