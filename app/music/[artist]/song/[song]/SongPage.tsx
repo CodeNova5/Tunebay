@@ -419,7 +419,20 @@ export default function SongPage() {
             </div>
         );
     }
-    if (!track) return <h1>Loading...</h1>;
+    // In your component
+    if (!track) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="flex space-x-1">
+                    <span className="w-2 h-6 bg-blue-500 animate-equalizer"></span>
+                    <span className="w-2 h-10 bg-blue-500 animate-equalizer delay-100"></span>
+                    <span className="w-2 h-8 bg-blue-500 animate-equalizer delay-200"></span>
+                    <span className="w-2 h-12 bg-blue-500 animate-equalizer delay-300"></span>
+                </div>
+            </div>
+        );
+    }
+
 
     return (
         <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
@@ -431,7 +444,7 @@ export default function SongPage() {
                     {track.artists.map((a) => a.name).join(", ")}
                 </h2>
             </div>
-             <img src={track.album.images[0]?.url || "/placeholder.jpg"} alt={track.name} width="300" />
+            <img src={track.album.images[0]?.url || "/placeholder.jpg"} alt={track.name} width="300" />
 
             {/* Song Details Table */}
             <table style={{ margin: "20px auto", borderCollapse: "collapse", width: "80%" }}>

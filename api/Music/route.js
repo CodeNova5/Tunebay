@@ -661,6 +661,16 @@ export default async function handler(req, res) {
       }
 
       try {
+        const cacheKey = `relatedArtists:${decodedArtistName}`;
+        // 1 Try MongoDB cache first
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
+        }
+      
         // Fetch related artists from Last.fm
         const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
           decodedArtistName
@@ -685,6 +695,14 @@ export default async function handler(req, res) {
           url: artist.url || null,
         }));
 
+      // save to mongodb
+      await SongCache.updateOne(
+        { cacheKey },
+        { $set: { data: relatedArtists, createdAt: new Date() } },
+        { upsert: true }
+      );
+
+
         res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
         return res.status(200).json(relatedArtists);
       } catch (err) {
@@ -701,9 +719,18 @@ export default async function handler(req, res) {
       }
 
       try {
+        // 1️⃣ Try MongoDB cache first
+        await connectDB();
+        const cacheKey = `artistAlbums:${artistId}`;
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=7200, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
+        }
 
         // Fetch artist albums
-        const apiUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single,appears_on&market=US&limit=15`;
+        const apiUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,appears_on&market=US&limit=10`;
         const albumsResponse = await fetchWithSpotifyTokens(
           apiUrl,
           getSpotifyAccessToken,
@@ -717,7 +744,15 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: "No albums found for this artist" });
         }
 
-        res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
+        // Save to MongoDB
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: albumsData.items, createdAt: new Date() } },
+          { upsert: true }
+        );
+
+
+        res.setHeader("Cache-Control", "s-maxage=7200, stale-while-revalidate");
         return res.status(200).json(albumsData.items.map((album) => ({
           name: album.name,
           artists: album.artists.map((artist) => ({
@@ -742,6 +777,16 @@ export default async function handler(req, res) {
       }
 
       try {
+        // 1️⃣ Try MongoDB cache first
+        await connectDB();
+        const cacheKey = `albumDetail:${albumId}`;
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
+          return res.status(200).json(mongoCache.data);
+        }
+        // Fetch album details
         const apiUrl = `https://api.spotify.com/v1/albums/${albumId}`;
         const albumResponse = await fetchWithSpotifyTokens(
           apiUrl,
@@ -779,7 +824,12 @@ export default async function handler(req, res) {
           })),
           tracks: tracks,
         };
-
+        // Save to MongoDB
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: formattedAlbum, createdAt: new Date() } },
+          { upsert: true }
+        );
         res.setHeader("Cache-Control", "max-age=31536000, immutable");
         return res.status(200).json(formattedAlbum);
       } catch (err) {
@@ -798,7 +848,7 @@ export default async function handler(req, res) {
           console.log("redis cache hit for", cacheKey);
           res.setHeader(
             "Cache-Control",
-            "public, s-maxage=604,800, stale-while-revalidate"
+            "public, s-maxage=604800, stale-while-revalidate"
           );
           return res.status(200).json(cached);
         }
@@ -946,18 +996,15 @@ export default async function handler(req, res) {
       }
 
       if (playlistType === "sp") {
-        const cacheKey = `playlist:${playlistId}`;
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=2592000, stale-while-revalidate"
-          );
-          return res.status(200).json(cached);
+        // 1️⃣ Try MongoDB cache first
+        await connectDB();
+        const cacheKey = `spotifyPlaylist:${playlistId}`;
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=2592000, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
         }
-
         const apiUrl = `https://api.spotify.com/v1/playlists/${playlistId}`;
         const response = await fetchWithSpotifyTokens(
           apiUrl,
@@ -985,24 +1032,27 @@ export default async function handler(req, res) {
           artist: { name: item.track.artists[0]?.name || "Unknown Artist" },
           album: { cover_medium: item.track.album.images[0]?.url || "/placeholder.jpg" },
         }));
-        // Cache for 30 days
-        await redis.set(cacheKey, { playlistDetails, tracks }, { ex: 2592000 });
+        // Cache in mongodb for 30 days
+        await SongCache.updateOne(
+          { cacheKey }, 
+          { $set: { data: { playlistDetails, tracks }, createdAt: new Date() } },
+          { upsert: true }
+        );
         res.setHeader("Cache-Control", "public, s-maxage=2592000, stale-while-revalidate");
         return res.status(200).json({ playlistDetails, tracks });
       }
 
       if (playlistType === "dz") {
+        // 1️⃣ Try MongoDB cache first
+        await connectDB();
         const cacheKey = `deezerPlaylist:${playlistId}`;
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=2592000, stale-while-revalidate"
-          );
-          return res.status(200).json(cached);
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=2592000, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
         }
+
         // Fetch Deezer playlist details
         const options = {
           method: "GET",
@@ -1030,8 +1080,12 @@ export default async function handler(req, res) {
             artist: { name: track.artist.name },
             album: { cover_medium: track.album.cover_medium },
           }));
-          // Cache for 30 days
-          await redis.set(cacheKey, { playlistDetails, tracks }, { ex: 2592000 });
+          // Cache in mongodb for 30 days
+          await SongCache.updateOne(
+            { cacheKey }, 
+            { $set: { data: { playlistDetails, tracks }, createdAt: new Date() } },
+            { upsert: true }
+          );
           res.setHeader("Cache-Control", "public, s-maxage=2592000, stale-while-revalidate");
           return res.status(200).json({ playlistDetails, tracks });
         } catch (error) {

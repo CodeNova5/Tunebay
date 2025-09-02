@@ -19,6 +19,21 @@
   }
 }
 
+/* Add this in your global.css (or module.css) */
+@keyframes equalizer {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-equalizer {
+  display: inline-block;
+  animation: equalizer 1s infinite;
+  transform-origin: bottom;
+}
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+
 body {
   background: var(--background);
   color: var(--foreground);
