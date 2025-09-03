@@ -271,7 +271,7 @@ export default async function handler(req, res) {
 
         //  Try Redis cache first
         const cached = await redis.get(cacheKey);
-        if (cached) {      
+        if (cached) {
           console.log("cache hit for", cacheKey);
           res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
           return res.status(200).json(cached);
@@ -280,7 +280,7 @@ export default async function handler(req, res) {
         // Try mongodb cache next
         await connectDB();
         const mongoCache = await SongCache.findOne({ cacheKey });
-        if (mongoCache)  {
+        if (mongoCache) {
           console.log("MongoDB cache hit for", cacheKey);
           res.setHeader("Cache-Control", "public, s-maxage=7776000, immutable");
           return res.status(200).json(mongoCache.data);
@@ -306,7 +306,7 @@ export default async function handler(req, res) {
         const videoData = { videoId };
 
         // 3️⃣ Save result in Redis for 3months + MongoDB
-        await redis.set(cacheKey, videoData, { ex: 7776000});
+        await redis.set(cacheKey, videoData, { ex: 7776000 });
         await SongCache.updateOne(
           { cacheKey },
           { $set: { data: videoData, createdAt: new Date() } },
@@ -462,7 +462,7 @@ export default async function handler(req, res) {
           console.warn("⚠️ Redis unavailable, falling back to Spotify:", redisErr.message);
         }
 
-       
+
 
         // 🔹 3. Fetch from Spotify
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
@@ -523,7 +523,7 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `relatedTracks:${decodedArtistName}:${decodedSongName}`;
-        
+
         // Try MongoDB cache first
         await connectDB();
         const mongoCache = await SongCache.findOne({ cacheKey });
@@ -532,7 +532,7 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
-        
+
         // 2️⃣ Try Redis cache next
         const cached = await redis.get(cacheKey);
         if (cached) {
@@ -583,7 +583,7 @@ export default async function handler(req, res) {
           { $set: { data: relatedTracks, createdAt: new Date() } },
           { upsert: true }
         );
-        
+
 
         res.setHeader(
           "Cache-Control",
@@ -670,7 +670,7 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
-      
+
         // Fetch related artists from Last.fm
         const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
           decodedArtistName
@@ -695,12 +695,12 @@ export default async function handler(req, res) {
           url: artist.url || null,
         }));
 
-      // save to mongodb
-      await SongCache.updateOne(
-        { cacheKey },
-        { $set: { data: relatedArtists, createdAt: new Date() } },
-        { upsert: true }
-      );
+        // save to mongodb
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: relatedArtists, createdAt: new Date() } },
+          { upsert: true }
+        );
 
 
         res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
@@ -839,27 +839,23 @@ export default async function handler(req, res) {
     }
 
     else if (type === "topSongs") {
-
       try {
         const cacheKey = `topSongs`;
-        // 2️⃣ Try Redis cache next
+
+        // 🔹 Check Redis cache first
         const cached = await redis.get(cacheKey);
         if (cached) {
           console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=604800, stale-while-revalidate"
-          );
-          return res.status(200).json(cached);
+          res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
+          return res.status(200).json(JSON.parse(cached)); // ⬅️ parse cached JSON
         }
-        const url = `https://ws.audioscrobbler.com/2.0/?method=chart.gettoptracks`;
 
+        const url = `https://ws.audioscrobbler.com/2.0/?method=chart.gettoptracks`;
         const { data } = await fetchWithLastFmKeys(
           url,
           () => LAST_FM_API_KEY,
           () => LAST_FM_API_KEY2
         );
-        ;
 
         const accessToken = await getArtistAccessToken();
 
@@ -884,12 +880,6 @@ export default async function handler(req, res) {
               const spotifyData = await spotifyResponse.json();
               const image =
                 spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
-              // Cache for 7 days
-              await redis.set(
-                cacheKey,
-                JSON.stringify({ title, artist, image }), // value must be a string or buffer
-                { ex: 604800 } // expiry in seconds (7 days)
-              );
 
               return { title, artist, image };
             } catch (err) {
@@ -899,15 +889,17 @@ export default async function handler(req, res) {
           })
         );
 
+        // 🔹 Cache the whole array, not per song
+        await redis.set(cacheKey, JSON.stringify(chartItems), { ex: 604800 });
+
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(chartItems);
-
       } catch (error) {
-        console.error('Error fetching chart data:', error.message);
-        return res.status(500).json({ error: 'Failed to fetch top songs' });
+        console.error("Error fetching chart data:", error.message);
+        return res.status(500).json({ error: "Failed to fetch top songs" });
       }
-
     }
+
     else if (type === "trendingArtists") {
 
       try {
@@ -1034,7 +1026,7 @@ export default async function handler(req, res) {
         }));
         // Cache in mongodb for 30 days
         await SongCache.updateOne(
-          { cacheKey }, 
+          { cacheKey },
           { $set: { data: { playlistDetails, tracks }, createdAt: new Date() } },
           { upsert: true }
         );
@@ -1082,7 +1074,7 @@ export default async function handler(req, res) {
           }));
           // Cache in mongodb for 30 days
           await SongCache.updateOne(
-            { cacheKey }, 
+            { cacheKey },
             { $set: { data: { playlistDetails, tracks }, createdAt: new Date() } },
             { upsert: true }
           );
