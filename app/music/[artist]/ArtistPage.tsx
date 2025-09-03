@@ -5,12 +5,9 @@ import Link from "next/link";
 import CommentShareModule from "@/components/CommentShareModule";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Script from 'next/script';
 interface Track {
   name: string;
-  album: {
-    images: { url: string }[];
-  };
+  albumImage: string;
   artists: { name: string; id: string }[];
 }
 
@@ -128,7 +125,7 @@ export default function ArtistPage() {
   }
 
   return (
-    
+
     <div
       style={{
         textAlign: "center",
@@ -138,7 +135,7 @@ export default function ArtistPage() {
       }}
     >
       <Header />
-      
+
       <h1 style={{ fontSize: "30px", color: "white" }}>
         {artistDetails.name}
       </h1>
@@ -179,18 +176,16 @@ export default function ArtistPage() {
             }}
           >
             <Link
-              href={`/music/${track.artists[0].name}/song/${encodeURIComponent(
-                track.name
-              )}`}
+              href={`/music/${encodeURIComponent(
+                track.artists[0].name
+              )}/song/${encodeURIComponent(track.name)}`}
             >
               <img
-                src={track.album.images[0]?.url || "/placeholder.jpg"}
+                src={track.albumImage}
                 alt={track.name}
                 style={{ width: "100%", borderRadius: "8px" }}
               />
-              <h3 style={{ fontSize: "16px", margin: "10px 0" }}>
-                {track.name}
-              </h3>
+              <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{track.name}</h3>
               <p style={{ fontSize: "14px", color: "#555" }}>
                 {track.artists.map((a) => a.name).join(", ")}
               </p>
