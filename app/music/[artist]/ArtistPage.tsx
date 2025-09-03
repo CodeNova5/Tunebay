@@ -38,23 +38,7 @@ export default function ArtistPage() {
         const artistData = await artistResponse.json();
         setArtistDetails(artistData);
 
-        // Fetch top tracks
-        const tracksResponse = await fetch(
-          `/api/Music/route?type=artistSongs&artistName=${encodeURIComponent(
-            artist
-          )}`
-        );
-        if (!tracksResponse.ok) {
-          const errorData = await tracksResponse.json();
-          setError(errorData.error || "Failed to fetch songs");
-          return;
-        }
-        const tracksData = await tracksResponse.json();
-        const filteredTracks = tracksData.filter(
-          (track: any, index: number, self: any[]) =>
-            index === self.findIndex((t) => t.name === track.name)
-        );
-        setTopTracks(filteredTracks);
+       
 
         // Fetch related artists
         const relatedArtistsResponse = await fetch(
