@@ -847,7 +847,7 @@ export default async function handler(req, res) {
         if (cached) {
           console.log("redis cache hit for", cacheKey);
           res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
-          return res.status(200).json(JSON.parse(cached)); // ⬅️ parse cached JSON
+          return res.status(200).json(cached);
         }
 
         const url = `https://ws.audioscrobbler.com/2.0/?method=chart.gettoptracks`;
