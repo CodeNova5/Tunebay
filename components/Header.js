@@ -98,16 +98,18 @@ const Header = () => {
     position: "fixed",
     top: 0,
     left: 0,
-    width: "100vh",
+    width: "100%",
     height: "60px",
     backgroundColor: "#111",
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between", // spreads out left/center/right
+    justifyContent: "space-between",
     borderBottom: "1px solid #444",
     color: "white",
     zIndex: 1000,
     padding: "0 20px",
+    boxSizing: "border-box", // ✅ prevents overflow
+    overflowX: "hidden",     // ✅ just in case
   }}
 >
   {/* Left: Profile */}
