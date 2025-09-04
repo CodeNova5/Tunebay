@@ -784,7 +784,7 @@ export default function SongPage() {
                                         style={{ width: "100%", borderRadius: "8px" }}
                                     />
                                     <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{song.name}</h3>
-                                    <p style={{ fontSize: "14px", color: "#555" }}>{song.artist}</p>
+                                    <p style={{ fontSize: "14px", color: "#888" }}>{song.artist}</p>
                                 </a>
                             </Link>
                         </div>
