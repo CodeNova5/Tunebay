@@ -34,8 +34,18 @@
 .delay-200 { animation-delay: 0.2s; }
 .delay-300 { animation-delay: 0.3s; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* globals.css */
+
+/* Force dark theme always */
+html, body {
+  background-color: #000 !important;
+  color: #fff !important;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Prevent system light/dark theme interference */
+:root {
+  color-scheme: only dark;
 }
