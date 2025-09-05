@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { useSmartRedirect } from "@/components/useSmartRedirect";
-
 const Header = () => {
   const [profileImg, setProfileImg] = useState("/images/default-profile.png");
   const [userInfo, setUserInfo] = useState(null);
@@ -13,11 +12,11 @@ const Header = () => {
   const [notLoggedIn, setNotLoggedIn] = useState(false);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
+  const [typingTimeout, setTypingTimeout] = useState(null);
   const [windowWidth, setWindowWidth] = useState(0);
   const userInfoRef = useRef(null);
   const router = useRouter();
   const redirect = useSmartRedirect();
-
   useEffect(() => {
     const updateSize = () => setWindowWidth(window.innerWidth);
     updateSize();
@@ -25,6 +24,7 @@ const Header = () => {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
+  // Only fetch on Enter key
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -32,9 +32,11 @@ const Header = () => {
     }
   };
 
+
+  // Only update search state, don't fetch on change
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
-    setResults([]);
+    setResults([]); // Clear results while typing
   };
 
   const fetchSearchResults = async (query) => {
@@ -42,28 +44,23 @@ const Header = () => {
       setResults([]);
       return;
     }
-    const res = await fetch(
-      `/api/Music/route?type=search&query=${encodeURIComponent(query)}`
-    );
+    const res = await fetch(`/api/Music/route?type=search&query=${encodeURIComponent(query)}`);
     const data = await res.json();
     setResults(data.tracks?.items || []);
   };
 
   useEffect(() => {
     document.body.style.overflow = results.length > 0 ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [results]);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("userInfo") || "null");
     if (storedUser?.data) {
       setUserInfo(storedUser);
-      const picture =
-        storedUser.provider === "google"
-          ? storedUser.data.picture
-          : storedUser.data.picture?.data?.url;
+      const picture = storedUser.provider === "google"
+        ? storedUser.data.picture
+        : storedUser.data.picture?.data?.url;
       setProfileImg(picture || "/images/default-profile.png");
     }
   }, []);
@@ -193,7 +190,7 @@ const Header = () => {
               fontSize: "0.9rem",
               outline: "none",
               width: windowWidth <= 600 ? "90px" : "140px", // ✅ smaller on phones
-  
+
 
             }}
           />
@@ -201,7 +198,7 @@ const Header = () => {
       </div>
 
       {/* User Info Modal */}
-      {showUserInfo && userInfo && (
+      {(showUserInfo && userInfo) && (
         <div
           style={{
             position: "absolute",
@@ -228,17 +225,12 @@ const Header = () => {
               marginBottom: "10px",
             }}
           />
-          <div>
-            <strong>{userInfo.data.name || "No Name"}</strong>
-          </div>
+          <div><strong>{userInfo.data.name || "No Name"}</strong></div>
           <div style={{ fontSize: "0.9rem", marginTop: "4px" }}>
             ID: {userInfo.data.sub || userInfo.data.id || "N/A"}
           </div>
           <div style={{ marginTop: "10px" }}>
-            <Link
-              href="/login"
-              style={{ color: "#4fc3f7", textDecoration: "underline" }}
-            >
+            <Link href="/login" style={{ color: "#4fc3f7", textDecoration: "underline" }}>
               Switch Account
             </Link>
           </div>

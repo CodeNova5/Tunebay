@@ -8,9 +8,7 @@ import Footer from "@/components/Footer";
 
 interface Track {
   name: string;
-  album: {
-    images: { url: string }[];
-  };
+  albumImage: string;
   artists: { name: string, id: string }[];
 }
 
@@ -132,7 +130,7 @@ export default function ArtistPage() {
             <Link href={`/music/${track.artists[0].name}/song/${encodeURIComponent(track.name)}`}>
               <a style={{ textDecoration: "none", color: "inherit" }}>
                 <img
-                  src={track.album.images[0]?.url || "/placeholder.jpg"}
+                  src={track.albumImage || "/placeholder.jpg"}
                   alt={track.name}
                   style={{ width: "100%", borderRadius: "8px" }}
                 />

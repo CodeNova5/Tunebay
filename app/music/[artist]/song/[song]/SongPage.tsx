@@ -84,7 +84,7 @@ export default function SongPage() {
                         saveUserInfo(data);
                         setUserInfo(data);
                         setTimeout(() => {
-                            router.back();
+                            router.refresh();
                         }, 1000);
                     } else {
                         console.error("Error: No Google credential received.");

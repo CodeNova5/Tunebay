@@ -494,7 +494,7 @@ export default async function handler(req, res) {
 
         // 🔹 4. Save to Redis (1 week)
         try {
-          await redis.set(cacheKey, JSON.stringify(artistSongs), { ex: 604800 });
+          await redis.set(cacheKey, artistSongs, { ex: 604800 });
         } catch (redisErr) {
           console.warn("⚠️ Failed to write to Redis:", redisErr.message);
         }
