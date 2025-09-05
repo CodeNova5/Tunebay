@@ -49,10 +49,10 @@ export default function Footer() {
           <div className={styles.section}>
             <h3 className={styles.heading}>Contact</h3>
             <ul className={styles.linkList}>
-              <li>Email: <a href="mailto:hello@codenova.com" className={styles.link}>hello@codenova.com</a></li>
-              <li>Phone: <span className={styles.text}>+234 812 345 6789</span></li>
-              <li>Location: <span className={styles.text}>Lagos, Nigeria</span></li>
-            </ul>
+              <li>Email: <a href="mailto:hello@codenova.com" className={styles.link}>codenova02@gmail.com</a></li>
+              <li>Phone: <span className={styles.text}>+234 907 208 9091</span></li>
+          <li><a href="https://wa.me/message/ZAOGLC432KX7A1"> Whatsapp Me</a></li>
+           </ul>
           </div>
         </div>
       </div>
