@@ -16,7 +16,9 @@ Replace placeholders: SITE_NAME, SITE_URL, CONTACT_EMAIL, EFFECTIVE_DATE. */
 
 
 
-export default function PrivacyPolicyPage() { const SITE_NAME = "Tunebay"; // replace with your site name const SITE_URL = "https://tunebay.vercel.app"; // replace with your site URL const CONTACT_EMAIL = "codenova02@gmail.com"; // replace with your contact email const EFFECTIVE_DATE = "September 5, 2025"; // replace with your effective date
+export default function PrivacyPolicyPage() { const SITE_NAME = "Tunebay"; // replace with your site name const SITE_URL = "https://tunebay.vercel.app";
+const CONTACT_EMAIL = "codenova02@gmail.com";
+const EFFECTIVE_DATE = "September 5, 2025";
 
 return ( <main className="min-h-screen bg-gray-50 text-gray-900 py-12 px-4 sm:px-6 lg:px-8"> <div className="mx-auto max-w-4xl bg-white p-8 rounded-2xl shadow"> <header className="mb-6"> <h1 className="text-3xl font-extrabold">Privacy Policy</h1> <p className="mt-1 text-sm text-gray-500">Effective date: {EFFECTIVE_DATE}</p> </header>
 
