@@ -102,7 +102,7 @@ const Header = () => {
         top: 0,
         left: 0,
         width: "100%",
-        maxWidth: "100%", // ✅ prevent overflow
+        maxWidth: "100vw",
         height: "60px",
         backgroundColor: "#111",
         display: "flex",
@@ -192,8 +192,10 @@ const Header = () => {
               color: "white",
               fontSize: "0.9rem",
               outline: "none",
-              width: windowWidth <= 600 ? "80px" : "140px", // ✅ smaller on phones
-              maxWidth: "100%",
+              width: windowWidth <= 600 ? "70px" : "140px", // ✅ smaller on phones
+    flexShrink: 1,
+    minWidth: 0,
+
             }}
           />
         </div>
