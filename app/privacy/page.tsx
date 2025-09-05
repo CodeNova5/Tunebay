@@ -16,7 +16,8 @@ Replace placeholders: SITE_NAME, SITE_URL, CONTACT_EMAIL, EFFECTIVE_DATE. */
 
 
 
-export default function PrivacyPolicyPage() { const SITE_NAME = "Tunebay"; // replace with your site name const SITE_URL = "https://tunebay.vercel.app";
+export default function PrivacyPolicyPage() { const SITE_NAME = "Tunebay";
+const SITE_URL = "https://tunebay.vercel.app";
 const CONTACT_EMAIL = "codenova02@gmail.com";
 const EFFECTIVE_DATE = "September 5, 2025";
 
