@@ -192,9 +192,8 @@ const Header = () => {
               color: "white",
               fontSize: "0.9rem",
               outline: "none",
-              width: windowWidth <= 600 ? "70px" : "140px", // ✅ smaller on phones
-    flexShrink: 1,
-    minWidth: 0,
+              width: windowWidth <= 600 ? "90px" : "140px", // ✅ smaller on phones
+  
 
             }}
           />
