@@ -136,6 +136,54 @@ export default function ArtistPage() {
         ))}
       </div>
       
+      <h2>Albums</h2>
+      <div
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          gap: "20px",
+          padding: "10px",
+        }}
+      >
+        {artistAlbums.length > 0 ? (
+          artistAlbums.map((album, index) => (
+            <div
+              key={index}
+              style={{
+                minWidth: "200px",
+                textAlign: "center",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                padding: "10px",
+              }}
+            >
+              <Link
+                href={`/music/${decodeURIComponent(album.artists[0].name)}/album/${encodeURIComponent(album.id)}`}
+              >
+                <a
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <img
+                    src={album.image}
+                    alt={album.name}
+                    style={{ width: "100%", borderRadius: "8px" }}
+                  />
+                  <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{album.name}</h3>
+                  <p style={{ fontSize: "14px", color: "#555" }}>
+                    {album.releaseDate}
+                  </p>
+                  <p style={{ fontSize: "14px", color: "#555" }}>
+                    Tracks: {album.totalTracks}
+                  </p>
+                </a>
+              </Link>
+            </div>
+          ))
+        ) : (
+          <p>No albums found.</p>
+        )}
+      </div>
+
       <h2>Related Artists</h2>
       <div
         style={{
@@ -162,7 +210,7 @@ export default function ArtistPage() {
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
                   <img
-                    src={artist.image}
+                    src={"/placeholder.jpg"}
                     alt={artist.name}
                     style={{ width: "100%", borderRadius: "8px" }}
                   />

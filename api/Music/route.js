@@ -604,17 +604,15 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `artistDetails:${decodedArtistName}`;
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=31536000, immutable"
-          );
-          return res.status(200).json(cached);
+        // 1 Try MongoDB cache first
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
         }
-        // 3️⃣ Fetch from Spotify if not cached
+        // 2️⃣ Fetch from Spotify if not cached
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           decodedArtistName
         )}&type=artist&limit=1`;
@@ -636,12 +634,26 @@ export default async function handler(req, res) {
         }
 
         const artist = data.artists.items[0];
-        // Cache for 1 month
-        await redis.set(cacheKey, artist, { ex: 2592000 });
-        res.setHeader(
-          "Cache-Control",
-          "public, s-maxage=2592000, immutable"
+        // Save to MongoDB
+        await SongCache.updateOne(
+          { cacheKey },
+          {
+            $set: {
+              data: {
+                name: artist.name,
+                id: artist.id,
+                image: artist.images[0]?.url || null,
+                genres: artist.genres || [],
+                followers: artist.followers?.total || 0,
+                createdAt: new Date(),
+              },
+            },
+          },
+          { upsert: true }
         );
+
+
+        res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate");
         return res.status(200).json({
           name: artist.name,
           id: artist.id,
@@ -691,7 +703,6 @@ export default async function handler(req, res) {
         // Map Last.fm response to a cleaner format
         const relatedArtists = lastFmData.similarartists.artist.map((artist) => ({
           name: artist.name,
-          image: artist.image?.[2]?.["#text"] || "/placeholder.jpg", // Last.fm images are an array, [2] = "medium"
           url: artist.url || null,
         }));
 
