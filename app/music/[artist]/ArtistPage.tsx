@@ -35,7 +35,7 @@ export default function ArtistPage() {
           const artistData = await artistResponse.json();
           setArtistDetails(artistData);
 
-           // Fetch top tracks
+          // Fetch top tracks
           const tracksResponse = await fetch(
             `/api/Music/route?type=artistSongs&artistName=${encodeURIComponent(artist)}`
           );
@@ -51,7 +51,6 @@ export default function ArtistPage() {
           );
           setTopTracks(filteredTracks);
 
-          
           // Fetch related artists
           const relatedArtistsResponse = await fetch(
             `/api/Music/route?type=relatedArtists&artistName=${encodeURIComponent(artist)}`
@@ -98,8 +97,17 @@ export default function ArtistPage() {
   return (
     <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
       <Header />
-      {error && <p style={{ color: "red" }}>{error}</p>}
-     <h2>Top Tracks</h2>
+      <h1 style={{ fontSize: "30px", color: "white" }}>{artistDetails.name}</h1>
+      <img
+        src={artistDetails.image || "/placeholder.jpg"}
+        alt={artistDetails.name}
+        style={{ borderRadius: "50%", width: "200px", height: "200px" }}
+      />
+      <p style={{ fontSize: "18px", color: "white" }}>
+        Followers: {artistDetails.followers}
+      </p>
+      <CommentShareModule playlist={undefined} track={undefined} album={undefined} artist={artistDetails} />
+      <h2>Top Tracks</h2>
       <div
         style={{
           display: "flex",
@@ -113,33 +121,69 @@ export default function ArtistPage() {
             key={index}
             style={{
               minWidth: "200px",
-              backgroundColor: "#222",
-              padding: "10px",
+              textAlign: "center",
+              border: "1px solid #ddd",
               borderRadius: "8px",
+              padding: "10px",
             }}
           >
-            <img
-              src={track.albumImage}
-              alt={track.name}
-              style={{ width: "100%", borderRadius: "8px" }}
-            />
-            <h3>{track.name}</h3>
-            <p>
-              {track.artists.map((artist, idx) => (
-                <span key={artist.id}>
-                  <Link href={`/music/${artist.id}`} style={{ color: "#1DB954" }}>
-                    {artist.name}
-                  </Link>
-                  {idx < track.artists.length - 1 && ", "}
-                </span>
-              ))}
-            </p>
+            <Link href={`/music/${track.artists[0].name}/song/${encodeURIComponent(track.name)}`}>
+              <a style={{ textDecoration: "none", color: "inherit" }}>
+                <img
+                  src={track.albumImage || "/placeholder.jpg"}
+                  alt={track.name}
+                  style={{ width: "100%", borderRadius: "8px" }}
+                />
+                <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{track.name}</h3>
+                <p style={{ fontSize: "14px", color: "#555" }}>
+                  {track.artists.map((a) => a.name).join(", ")}
+                </p>
+              </a>
+            </Link>
           </div>
         ))}
-       
       </div>
-
-            <Footer />
+      
+      <h2>Related Artists</h2>
+      <div
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          gap: "20px",
+          padding: "10px",
+        }}
+      >
+        {relatedArtists.length > 0 ? (
+          relatedArtists.map((artist, index) => (
+            <div
+              key={index}
+              style={{
+                minWidth: "200px",
+                textAlign: "center",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                padding: "10px",
+              }}
+            >
+              <Link href={`/music/${artist?.name}`}>
+                <a
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <img
+                    src={artist.image}
+                    alt={artist.name}
+                    style={{ width: "100%", borderRadius: "8px" }}
+                  />
+                  <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{artist.name}</h3>
+                </a>
+              </Link>
+            </div>
+          ))
+        ) : (
+          <p>No related artists found.</p>
+        )}
+      </div>
+      <Footer />
 
     </div>
   );
