@@ -35,6 +35,22 @@ export default function ArtistPage() {
           const artistData = await artistResponse.json();
           setArtistDetails(artistData);
 
+           // Fetch top tracks
+          const tracksResponse = await fetch(
+            `/api/Music/route?type=artistSongs&artistName=${encodeURIComponent(artist)}`
+          );
+          if (!tracksResponse.ok) {
+            const errorData = await tracksResponse.json();
+            setError(errorData.error || "Failed to fetch songs");
+            return;
+          }
+          const tracksData = await tracksResponse.json();
+          const filteredTracks = tracksData.filter(
+            (track: any, index: number, self: any[]) =>
+              index === self.findIndex((t) => t.name === track.name)
+          );
+          setTopTracks(filteredTracks);
+
           
           // Fetch related artists
           const relatedArtistsResponse = await fetch(
@@ -92,6 +108,34 @@ export default function ArtistPage() {
           padding: "10px",
         }}
       >
+        {topTracks.map((track, index) => (
+          <div
+            key={index}
+            style={{
+              minWidth: "200px",
+              backgroundColor: "#222",
+              padding: "10px",
+              borderRadius: "8px",
+            }}
+          >
+            <img
+              src={track.albumImage}
+              alt={track.name}
+              style={{ width: "100%", borderRadius: "8px" }}
+            />
+            <h3>{track.name}</h3>
+            <p>
+              {track.artists.map((artist, idx) => (
+                <span key={artist.id}>
+                  <Link href={`/music/${artist.id}`} style={{ color: "#1DB954" }}>
+                    {artist.name}
+                  </Link>
+                  {idx < track.artists.length - 1 && ", "}
+                </span>
+              ))}
+            </p>
+          </div>
+        ))}
        
       </div>
 
