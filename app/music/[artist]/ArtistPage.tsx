@@ -150,46 +150,7 @@ export default function ArtistPage() {
           <p>No albums found.</p>
         )}
       </div>
-      <h2>Related Artists</h2>
-      <div
-        style={{
-          display: "flex",
-          overflowX: "auto",
-          gap: "20px",
-          padding: "10px",
-        }}
-      >
-        {relatedArtists.length > 0 ? (
-          relatedArtists.map((artist, index) => (
-            <div
-              key={index}
-              style={{
-                minWidth: "200px",
-                textAlign: "center",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                padding: "10px",
-              }}
-            >
-              <Link href={`/music/${artist?.name}`}>
-                <a
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  <img
-                    src={artist.image}
-                    alt={artist.name}
-                    style={{ width: "100%", borderRadius: "8px" }}
-                  />
-                  <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{artist.name}</h3>
-                </a>
-              </Link>
-            </div>
-          ))
-        ) : (
-          <p>No related artists found.</p>
-        )}
-      </div>
-      <Footer />
+            <Footer />
 
     </div>
   );
