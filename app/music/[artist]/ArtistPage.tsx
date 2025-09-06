@@ -97,15 +97,7 @@ export default function ArtistPage() {
   return (
     <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
       <Header />
-      <h1 style={{ fontSize: "30px", color: "white" }}>{artistDetails.name}</h1>
-      <img
-        src={artistDetails.image || "/placeholder.jpg"}
-        alt={artistDetails.name}
-        style={{ borderRadius: "50%", width: "200px", height: "200px" }}
-      />
-      <p style={{ fontSize: "18px", color: "white" }}>
-        Followers: {artistDetails.followers}
-      </p>
+      {error && <p style={{ color: "red" }}>{error}</p>}
       <CommentShareModule playlist={undefined} track={undefined} album={undefined} artist={artistDetails} />
       <h2>Top Tracks</h2>
       <div
