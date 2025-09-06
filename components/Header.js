@@ -110,7 +110,6 @@ const Header = () => {
         zIndex: 1000,
         padding: "0 10px",
         boxSizing: "border-box",
-        overflowX: "hidden", // ✅ no sideways scroll
       }}
     >
       {/* Left: Profile */}

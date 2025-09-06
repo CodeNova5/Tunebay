@@ -35,22 +35,7 @@ export default function ArtistPage() {
           const artistData = await artistResponse.json();
           setArtistDetails(artistData);
 
-          // Fetch top tracks
-          const tracksResponse = await fetch(
-            `/api/Music/route?type=artistSongs&artistName=${encodeURIComponent(artist)}`
-          );
-          if (!tracksResponse.ok) {
-            const errorData = await tracksResponse.json();
-            setError(errorData.error || "Failed to fetch songs");
-            return;
-          }
-          const tracksData = await tracksResponse.json();
-          const filteredTracks = tracksData.filter(
-            (track: any, index: number, self: any[]) =>
-              index === self.findIndex((t) => t.name === track.name)
-          );
-          setTopTracks(filteredTracks);
-
+          
           // Fetch related artists
           const relatedArtistsResponse = await fetch(
             `/api/Music/route?type=relatedArtists&artistName=${encodeURIComponent(artist)}`
@@ -116,32 +101,7 @@ export default function ArtistPage() {
           padding: "10px",
         }}
       >
-        {topTracks.map((track, index) => (
-          <div
-            key={index}
-            style={{
-              minWidth: "200px",
-              textAlign: "center",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "10px",
-            }}
-          >
-            <Link href={`/music/${track.artists[0].name}/song/${encodeURIComponent(track.name)}`}>
-              <a style={{ textDecoration: "none", color: "inherit" }}>
-                <img
-                  src={track.albumImage || "/placeholder.jpg"}
-                  alt={track.name}
-                  style={{ width: "100%", borderRadius: "8px" }}
-                />
-                <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{track.name}</h3>
-                <p style={{ fontSize: "14px", color: "#555" }}>
-                  {track.artists.map((a) => a.name).join(", ")}
-                </p>
-              </a>
-            </Link>
-          </div>
-        ))}
+       
       </div>
       <h2>Albums</h2>
       <div
