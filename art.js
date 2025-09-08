@@ -1,33 +1,59 @@
 import axios from "axios";
-import fs from "fs";
-async function downloadMP3(videoId) {
+import * as cheerio from "cheerio";
+
+async function getLyricsFromGenius(artist, song) {
   try {
-    const options = {
-      method: "GET",
-      url: "https://youtube-mp36.p.rapidapi.com/dl",
-      params: { id: videoId },
-      headers: {
-        "x-rapidapi-key": "67685ec1f0msh5feaa6bf64dbeadp16ffa5jsnd72b2a894302",
-        "x-rapidapi-host": "youtube-mp36.p.rapidapi.com",
-      },
-    };
+    function cleanLyrics(rawLyrics) {
+      // Start from first [Verse]/[Chorus]/etc.
+      const startMatch = rawLyrics.match(/\[(Verse|Chorus|Pre-Chorus|Bridge|Intro|Outro).*?\]/i);
+      let lyrics = startMatch ? rawLyrics.slice(startMatch.index).trim() : rawLyrics.trim();
 
-    const res = await axios.request(options);
+      // Remove trailing [Music Video], [Credits], etc.
+      lyrics = lyrics.replace(/\[.*?(Video|Credits|Produced|Instrumental).*?\]$/gi, "").trim();
 
-    if (res.data.status === "ok") {
-      const file = fs.createWriteStream("output.mp3");
-      const audio = await axios.get(res.data.link, { responseType: "stream" });
-      audio.data.pipe(file);
-
-      file.on("finish", () => {
-        console.log("✅ MP3 saved as output.mp3");
-      });
-    } else {
-      console.error("❌ Error:", res.data.msg);
+      return lyrics;
     }
+
+
+    // Step 1: Search Genius for the song
+    const searchUrl = `https://genius.com/api/search/song?q=${encodeURIComponent(artist + " " + song)}`;
+    const searchRes = await axios.get(searchUrl);
+    const hits = searchRes.data.response.sections[0].hits;
+
+    if (!hits.length) return null;
+
+    // Step 2: Get the song URL
+    const songUrl = hits[0].result.url;
+
+    // Step 3: Fetch the page HTML
+    const pageRes = await axios.get(songUrl);
+    const $ = cheerio.load(pageRes.data);
+
+    // Step 4: Extract lyrics
+    let lyrics = "";
+    $("div[data-lyrics-container=true]").each((i, elem) => {
+      lyrics += $(elem).text() + "\n";
+    });
+    lyrics = cleanLyrics(lyrics);
+    return { url: songUrl, lyrics: lyrics.trim() };
   } catch (err) {
-    console.error("❌ Failed:", err.message);
+    console.error("Genius scrape error:", err.message);
+    return null;
   }
 }
 
-downloadMP3("wAI1hoHjcUA");
+
+export async function getLyrics(artist, song) {
+  const lyricsData = await getLyricsFromGenius(artist, song);
+  if (lyricsData) {
+    return lyricsData;
+  } else {
+    return { url: null, lyrics: "Lyrics not found." };
+  }
+}
+
+
+(async () => {
+  const result = await getLyrics("Adele", "Hello");
+  console.log(result);
+})();

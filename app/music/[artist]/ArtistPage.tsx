@@ -98,7 +98,6 @@ export default function ArtistPage() {
     <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
       <Header />
       {error && <p style={{ color: "red" }}>{error}</p>}
-      // Artist Info
       <h1 style={{ fontSize: "30px", color: "white" }}>{artistDetails.name}</h1>
       <img
         src={artistDetails.image || "/placeholder.jpg"}
@@ -122,11 +121,16 @@ export default function ArtistPage() {
           <div
             key={index}
             style={{
-              minWidth: "200px",
+              minWidth: "120px",
+              maxWidth: "120px",
+              background: "#232323",
               textAlign: "center",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "10px",
+              border: "1px solid #222",
+              borderRadius: "10px",
+              padding: "10px 8px",
+              boxSizing: "border-box",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+              transition: "transform 0.15s",
             }}
           >
             <Link href={`/music/${track.artists[0].name}/song/${encodeURIComponent(track.name)}`}>
@@ -145,7 +149,7 @@ export default function ArtistPage() {
           </div>
         ))}
       </div>
-      
+
       <h2>Albums</h2>
       <div
         style={{
@@ -160,11 +164,16 @@ export default function ArtistPage() {
             <div
               key={index}
               style={{
-                minWidth: "200px",
+                minWidth: "120px",
+                maxWidth: "120px",
+                background: "#232323",
                 textAlign: "center",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                padding: "10px",
+                border: "1px solid #222",
+                borderRadius: "10px",
+                padding: "10px 8px",
+                boxSizing: "border-box",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+                transition: "transform 0.15s",
               }}
             >
               <Link
@@ -195,44 +204,42 @@ export default function ArtistPage() {
       </div>
 
       <h2>Related Artists</h2>
-      <div
-        style={{
-          display: "flex",
-          overflowX: "auto",
-          gap: "20px",
-          padding: "10px",
-        }}
-      >
-        {relatedArtists.length > 0 ? (
-          relatedArtists.map((artist, index) => (
-            <div
-              key={index}
-              style={{
-                minWidth: "200px",
-                textAlign: "center",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                padding: "10px",
-              }}
-            >
-              <Link href={`/music/${artist?.name}`}>
-                <a
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  <img
-                    src={"/placeholder.jpg"}
-                    alt={artist.name}
-                    style={{ width: "100%", borderRadius: "8px" }}
-                  />
-                  <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{artist.name}</h3>
-                </a>
-              </Link>
-            </div>
-          ))
-        ) : (
-          <p>No related artists found.</p>
-        )}
-      </div>
+
+      {relatedArtists.length > 0 ? (
+        relatedArtists.map((artist, index) => (
+          <div
+            key={index}
+            style={{
+              minWidth: "120px",
+              maxWidth: "120px",
+              background: "#232323",
+              textAlign: "center",
+              border: "1px solid #222",
+              borderRadius: "10px",
+              padding: "10px 8px",
+              boxSizing: "border-box",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+              transition: "transform 0.15s",
+            }}
+          >
+            <Link href={`/music/${artist?.name}`}>
+              <a
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <img
+                  src={"/placeholder.jpg"}
+                  alt={artist.name}
+                  style={{ width: "100%", borderRadius: "8px" }}
+                />
+                <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{artist.name}</h3>
+              </a>
+            </Link>
+          </div>
+        ))
+      ) : (
+        <p>No related artists found.</p>
+      )}
+  
       <Footer />
 
     </div>
