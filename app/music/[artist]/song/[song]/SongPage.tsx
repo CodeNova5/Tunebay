@@ -365,9 +365,8 @@ export default function SongPage() {
                 a.id = "download-link"; // Add an ID for easier selection
                 a.style.display = "none";
                 a.href = url;
-                a.download = fileName;
                 document.body.appendChild(a);
-                
+
 
                 setDownloadUrl(url);
 
