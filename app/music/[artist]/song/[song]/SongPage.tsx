@@ -362,9 +362,12 @@ export default function SongPage() {
 
                 // 5. Trigger download in browser
                 const a = document.createElement("a");
+                a.id = "download-link"; // Add an ID for easier selection
+                a.style.display = "none";
                 a.href = url;
                 a.download = fileName;
-
+                document.body.appendChild(a);
+                
 
                 setDownloadUrl(url);
 
@@ -575,9 +578,10 @@ export default function SongPage() {
                                 if (mutation.type === 'childList') {
                                     mutation.addedNodes.forEach((node) => {
                                         if ((node as HTMLElement).id === 'download-link') {
-                                            setModalMessage("✅ Download has started!");
                                             (node as HTMLElement).setAttribute('download', cleanFileName);
                                             (node as HTMLElement).click();
+                                            setModalMessage("✅ Download has started");
+
                                             setTimeout(() => {
                                                 setModalMessage(null);
                                                 setIsUploading(false);
@@ -591,23 +595,17 @@ export default function SongPage() {
                         observer.observe(document.body, { childList: true, subtree: true });
                     }
                     else {
+                        setIsUploading(false);
+                        const link = document.createElement("a");
+                        link.href = downloadUrl;
+                        link.download = cleanFileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
                         setModalMessage("✅ Download has started");
                         setTimeout(() => setModalMessage(null), 1000);
-                        setIsUploading(false);
-                        const fileUrl = downloadUrl;
-                        fetch(fileUrl)
-                            .then(response => response.blob())
-                            .then(blob => {
-                                const link = document.createElement("a");
-                                link.href = URL.createObjectURL(blob);
-                                link.download = cleanFileName;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                            })
-                            .catch(console.error);
                     }
-
                     setShowModal(true);
                 }}
                 style={{
