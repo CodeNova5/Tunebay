@@ -19,6 +19,7 @@ interface Artist {
 export default function HomePage() {
     const [songs, setSongs] = useState<ChartItem[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
+    const [NigerianSongs, setNigerianSongs] = useState<ChartItem[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -41,9 +42,21 @@ export default function HomePage() {
                 setError(err.message);
             }
         }
+        async function fetchNigerianSongs() {
+            try {
+                const res = await fetch(`/api/Music/route?type=nigerianSongs`);
+                if (!res.ok) throw new Error("Failed to fetch Nigerian songs");
+                setNigerianSongs(await res.json());
+            } catch (err: any) {
+                setError(err.message);
+            }
+        }
+
         fetchTopSongs();
         fetchTopArtists();
+        fetchNigerianSongs();
     }, []);
+
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
@@ -138,6 +151,44 @@ export default function HomePage() {
                                 </motion.div>
                             </Link>
                         ))}
+                    </div>
+                </SectionWrapper>
+
+                {/* Top Nigerian Songs*/}
+                <SectionWrapper title="Top Nigerian Songs">
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+                        {Array.from({ length: Math.ceil(NigerianSongs.length / 4) }, (_, pageIndex) => {    
+                            const pageSongs = NigerianSongs.slice(pageIndex * 4, pageIndex * 4 + 4);
+                            return (
+                                <div 
+                                    key={pageIndex}
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+                                >
+                                    {pageSongs.map((song, i) => (
+                                        <Link
+                                            key={i}
+                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                                        >
+                                            <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
+                                                <img
+                                                    src={song.image}
+                                                    alt={song.title}
+                                                    className="w-16 h-16 rounded-lg object-cover"
+                                                />
+                                                <div className="flex flex-col truncate">
+                                                    <span className="font-medium text-white truncate">
+                                                        {song.title}
+                                                    </span>
+                                                    <span className="text-sm text-gray-400 truncate">
+                                                        {song.artist}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 </SectionWrapper>
 

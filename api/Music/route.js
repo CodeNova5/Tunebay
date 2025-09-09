@@ -1045,7 +1045,46 @@ export default async function handler(req, res) {
       }
     }
 
+    else if (type === "nigerianSongs") {
+      try {
+        const cacheKey = `nigerianSongs`;
+        // 🔹 Check mongo cache first
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
+        }
+        // Fetch Nigerian songs from Last.fm
+        const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=geo.gettoptracks&country=nigeria&limit=20&api_key=${LAST_FM_API_KEY}&format=json`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error("Failed to fetch Nigerian songs from Last.fm");
+        }
+        const data = await response.json();
 
+        if (!data.tracks?.track?.length) {
+          return res.status(404).json({ error: "No Nigerian songs found" });
+        }
+        const nigerianSongs = data.tracks.track.map((track) => ({
+          name: track.name,
+          artist: track.artist.name,
+          url: track.url,
+        }));
+        // Cache in mongodb for 7 days
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: nigerianSongs, createdAt: new Date() } },
+          { upsert: true }
+        );
+        res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
+        return res.status(200).json(nigerianSongs);
+      } catch (err) {
+        console.error("Last.fm API Error:", err);
+        return res.status(500).json({ error: "Failed to fetch Nigerian songs" });
+      }
+    }
 
     else if (type === "playlist") {
       if (!playlistId) {
