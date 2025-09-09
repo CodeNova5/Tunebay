@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import PlaylistClientPage from "./PlaylistClientPage";
+import SongCache from "../../../../../../models/songCache.js";
+import { connectDB } from "../../../../../../lib/mongodb.js";
 
 // Server-side metadata generation
 export async function generateMetadata(props: any): Promise<Metadata> {
@@ -7,6 +9,47 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const { playlistId, playlistType } = params;
 
   const baseUrl = "https://tunebay.vercel.app";
+  // Try MOngoDB cache
+  await connectDB();
+  const cacheKey = `playlist-${playlistId}-${playlistType}`;
+  const mongoCache = await SongCache.findOne({ cacheKey });
+  if (mongoCache) {
+    console.log("✅ MongoDB cache hit for", cacheKey);
+    const playlistDetails = mongoCache.data;
+    const title = `${playlistDetails.name}`;
+    const description = `Explore the playlist "${playlistDetails.name}". Listen to tracks, view details, and more on Tuneflix.`;
+    const image = playlistDetails.image;
+    const url = `${baseUrl}/music/playlist/${encodeURIComponent(playlistId)}/type/${encodeURIComponent(playlistType)}`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url,
+        type: "music.playlist",
+        siteName: "Tuneflix",
+        images: [
+          {
+            url: image,
+            alt: `${playlistDetails.name} cover art`,
+          },
+        ],
+        locale: "en_US",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [image],
+      },  
+      authors: [{ name: "Code Nova" }],
+    };
+  }
+  console.log("❌ MongoDB cache miss for", cacheKey);
+  
+  // Fetch playlist details from your API route
   const apiUrl = `${baseUrl}/api/Music/route?type=playlist&playlistId=${playlistId}&playlistType=${playlistType}`;
 
   const res = await fetch(apiUrl, { cache: "no-store" });

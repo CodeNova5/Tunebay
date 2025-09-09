@@ -7,14 +7,12 @@ const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
 import { redis } from "../../components/redis.js";  // ✅ only one client reused
-const localCache = new Map(); // Simple in-memory cache
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let artistAccessToken = null;
 import axios from "axios";
 import SongCache from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
-import { title } from "process";
 
 let artistTokenExpiresAt = 0;
 

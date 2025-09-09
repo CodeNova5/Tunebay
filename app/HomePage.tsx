@@ -92,6 +92,19 @@ export default function HomePage() {
     );
 
     if (error) return <h1 className="text-red-400 text-center">{error}</h1>;
+    // Wait till page is fully loaded
+    if (songs.length === 0 || artists.length === 0 || NigerianSongs.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="flex space-x-1">
+                    <span className="w-2 h-6 bg-blue-500 animate-equalizer"></span>
+                    <span className="w-2 h-10 bg-blue-500 animate-equalizer delay-100"></span>
+                    <span className="w-2 h-8 bg-blue-500 animate-equalizer delay-200"></span>
+                    <span className="w-2 h-12 bg-blue-500 animate-equalizer delay-300"></span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#111] text-white">
@@ -100,10 +113,48 @@ export default function HomePage() {
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
 
                 {/* 🔹 Top Songs (kept full size) */}
-                <SectionWrapper title="Top Songs">
+                <SectionWrapper title="Top Songs Globally">
                     <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
                         {Array.from({ length: Math.ceil(songs.length / 4) }, (_, pageIndex) => {
                             const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
+                            return (
+                                <div
+                                    key={pageIndex}
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+                                >
+                                    {pageSongs.map((song, i) => (
+                                        <Link
+                                            key={i}
+                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                                        >
+                                            <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
+                                                <img
+                                                    src={song.image}
+                                                    alt={song.title}
+                                                    className="w-16 h-16 rounded-lg object-cover"
+                                                />
+                                                <div className="flex flex-col truncate">
+                                                    <span className="font-medium text-white truncate">
+                                                        {song.title}
+                                                    </span>
+                                                    <span className="text-sm text-gray-400 truncate">
+                                                        {song.artist}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </SectionWrapper>
+
+                {/* Top Nigerian Songs*/}
+                <SectionWrapper title="Top Nigerian Songs">
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+                        {Array.from({ length: Math.ceil(NigerianSongs.length / 4) }, (_, pageIndex) => {
+                            const pageSongs = NigerianSongs.slice(pageIndex * 4, pageIndex * 4 + 4);
                             return (
                                 <div
                                     key={pageIndex}
@@ -154,43 +205,7 @@ export default function HomePage() {
                     </div>
                 </SectionWrapper>
 
-                {/* Top Nigerian Songs*/}
-                <SectionWrapper title="Top Nigerian Songs">
-                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
-                        {Array.from({ length: Math.ceil(NigerianSongs.length / 4) }, (_, pageIndex) => {    
-                            const pageSongs = NigerianSongs.slice(pageIndex * 4, pageIndex * 4 + 4);
-                            return (
-                                <div 
-                                    key={pageIndex}
-                                    className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
-                                >
-                                    {pageSongs.map((song, i) => (
-                                        <Link
-                                            key={i}
-                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
-                                        >
-                                            <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
-                                                <img
-                                                    src={song.image}
-                                                    alt={song.title}
-                                                    className="w-16 h-16 rounded-lg object-cover"
-                                                />
-                                                <div className="flex flex-col truncate">
-                                                    <span className="font-medium text-white truncate">
-                                                        {song.title}
-                                                    </span>
-                                                    <span className="text-sm text-gray-400 truncate">
-                                                        {song.artist}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </SectionWrapper>
+
 
                 {/* 🔹 Genres */}
                 <SectionWrapper title="Genres">
