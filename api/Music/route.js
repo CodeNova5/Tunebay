@@ -14,6 +14,7 @@ let artistAccessToken = null;
 import axios from "axios";
 import SongCache from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
+import { title } from "process";
 
 let artistTokenExpiresAt = 0;
 
@@ -1068,7 +1069,8 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: "No Nigerian songs found" });
         }
         const nigerianSongs = data.tracks.track.map((track) => ({
-          name: track.name,
+          title: track.name,
+          image: "/placeholder.jpg",
           artist: track.artist.name,
           url: track.url,
         }));
