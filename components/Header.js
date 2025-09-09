@@ -110,6 +110,7 @@ const Header = () => {
         zIndex: 1000,
         padding: "0 10px",
         boxSizing: "border-box",
+        marginBottom: "60px",
       }}
     >
       {/* Left: Profile */}
