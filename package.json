@@ -34,6 +34,7 @@
     "next-connect": "^1.0.0",
     "node-fetch": "^3.3.2",
     "p-limit": "^6.2.0",
+    "puppeteer": "^24.20.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-h5-audio-player": "^3.10.0",

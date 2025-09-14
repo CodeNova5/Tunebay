@@ -236,6 +236,74 @@ const Header = () => {
           </div>
         </div>
       )}
+      {/* Search Results */}
+      {results.length > 0 && (
+        <div style={{
+          position: "fixed",
+          top: "60px",
+          left: 0,
+          width: "100%",
+          height: windowWidth <= 600 ? "calc(100% - 60px)" : "80%",
+          backgroundColor: "#111",
+          zIndex: 1002,
+          overflowY: "auto",
+          padding: windowWidth <= 600 ? "10px" : "20px",
+        }}>
+          <button
+            onClick={() => {
+              setSearch("");
+              setResults([]);
+            }}
+            style={{
+              position: "absolute",
+              top: "10px",
+              right: "20px",
+              background: "#333",
+              color: "white",
+              border: "none",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+            }}
+          >
+            Cancel
+          </button>
+
+          <div style={{ marginTop: "40px" }}>
+            {results.map(track => (
+              <div key={track.id} style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "12px 0",
+                borderBottom: "1px solid #444",
+                cursor: "pointer",
+                textAlign: "left",
+              }}>
+                <Link href={`/music/${encodeURIComponent(track.artists[0]?.name)}/song/${encodeURIComponent(track.name)}`}>
+                  <img
+                    src={track.album.images[2]?.url || track.album.images[0]?.url}
+                    alt="Album Art"
+                    style={{
+                      width: "60px",
+                      height: "60px",
+                      borderRadius: "4px",
+                      marginRight: "15px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <div>
+                    <strong style={{ color: "white" }}>{track.name}</strong>
+                    <div style={{ fontSize: "0.85rem", color: "#bbb" }}>
+                      {track.artists.map(artist => artist.name).join(", ")}
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
