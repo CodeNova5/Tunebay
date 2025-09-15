@@ -11,6 +11,7 @@ const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
 import { redis } from "../../components/redis.js";  // ✅ only one client reused
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
+let albumTokenExpiresAt = 0;
 let artistAccessToken = null;
 let albumAccessToken = null;
 import axios from "axios";
