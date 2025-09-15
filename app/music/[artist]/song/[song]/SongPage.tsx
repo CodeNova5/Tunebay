@@ -604,9 +604,8 @@ export default function SongPage() {
 
                         setModalMessage("✅ Download has started");
                         setTimeout(() => setModalMessage(null), 1000);
-                        setShowModal(true);
                     }
-                    
+                    setShowModal(true);
                 }}
                 style={{
                     display: "inline-block",
