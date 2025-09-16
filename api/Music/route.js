@@ -594,17 +594,6 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
-
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=2419200, stale-while-revalidate"
-          );
-          return res.status(200).json(cached);
-        }
         // 3️⃣ Fetch from Last.fm if not cached
         const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
           decodedArtistName
@@ -663,8 +652,7 @@ export default async function handler(req, res) {
           })
         );
 
-        // 4️⃣ Save to Redis + local cache for 28 days
-        await redis.set(cacheKey, relatedTracks, { ex: 2419200 });
+      
         // 5️⃣ Save to MongoDB
         await SongCache.updateOne(
           { cacheKey },
