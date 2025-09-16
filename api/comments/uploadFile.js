@@ -29,6 +29,12 @@ export default async function handler(req, res) {
 
       if (type === "music") {
         const fileBuffer = await fs.promises.readFile(uploadedFile.filepath);
+
+        // Reject files smaller than 1MB (1048576 bytes)
+        if (fileBuffer.length < 1048576) {
+          return res.status(400).json({ message: "File too small. Minimum size is 1MB." });
+        }
+
         const fileContent = fileBuffer.toString("base64");
 
         // GitHub upload code continues here...
@@ -72,6 +78,12 @@ export default async function handler(req, res) {
       }
       if (type === "commentFile") {
         const fileBuffer = await fs.promises.readFile(uploadedFile.filepath);
+
+        // Reject files smaller than 1MB (1048576 bytes)
+        if (fileBuffer.length < 1048576) {
+          return res.status(400).json({ message: "File too small. Minimum size is 1MB." });
+        }
+
         const fileContent = fileBuffer.toString("base64");
 
         // GitHub upload code continues here...
