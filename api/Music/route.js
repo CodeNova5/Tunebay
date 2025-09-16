@@ -16,6 +16,8 @@ let artistAccessToken = null;
 let albumAccessToken = null;
 import axios from "axios";
 import SongCache from "../../models/songCache.js";
+import ArtistAlbumsCache from "../../models/songCache.js";
+import ArtistSongsCache from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
 
 let artistTokenExpiresAt = 0;
@@ -94,7 +96,7 @@ export async function getLyrics(artist, song) {
   }
 }
 
-async function getAlbumAccessToken () {
+async function getAlbumAccessToken() {
   if (albumAccessToken && Date.now() < albumTokenExpiresAt) {
     return albumAccessToken;
   }
@@ -104,7 +106,7 @@ async function getAlbumAccessToken () {
     headers: {
       Authorization: `Basic ${authString}`,
       "Content-Type": "application/x-www-form-urlencoded",
-    },  
+    },
     body: "grant_type=client_credentials",
   });
   if (!tokenResponse.ok) throw new Error("Failed to get access token");
@@ -524,26 +526,12 @@ export default async function handler(req, res) {
 
         //  Try MongoDB cache first
         await connectDB();
-        const mongoCache = await SongCache.findOne({ cacheKey });
+        const mongoCache = await ArtistSongsCache.findOne({ cacheKey });
         if (mongoCache) {
           console.log("✅ MongoDB cache hit for", cacheKey);
           res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
-
-        // 🔹 1. Try Redis next
-        try {
-          const cachedRedis = await redis.get(cacheKey);
-          if (cachedRedis) {
-            console.log("✅ Redis cache hit for", cacheKey);
-            res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
-            return res.status(200).json(cachedRedis);
-          }
-        } catch (redisErr) {
-          console.warn("⚠️ Redis unavailable, falling back to Spotify:", redisErr.message);
-        }
-
-
 
         // 🔹 3. Fetch from Spotify
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
@@ -573,15 +561,8 @@ export default async function handler(req, res) {
           albumImage: track.album.images[0]?.url || "/placeholder.jpg",
         }));
 
-        // 🔹 4. Save to Redis (1 week)
-        try {
-          await redis.set(cacheKey, artistSongs, { ex: 604800 });
-        } catch (redisErr) {
-          console.warn("⚠️ Failed to write to Redis:", redisErr.message);
-        }
-
         // 🔹 5. Save to MongoDB
-        await SongCache.updateOne(
+        await ArtistSongsCache.updateOne(
           { cacheKey },
           { $set: { data: artistSongs, createdAt: new Date() } },
           { upsert: true }
@@ -598,109 +579,109 @@ export default async function handler(req, res) {
 
 
     else if (type === "relatedTracks") {
-  if (!artistName || !songName) {
-    return res.status(400).json({ error: "Missing artist name or song name" });
-  }
+      if (!artistName || !songName) {
+        return res.status(400).json({ error: "Missing artist name or song name" });
+      }
 
-  try {
-    const cacheKey = `relatedTracks:${decodedArtistName}:${decodedSongName}`;
+      try {
+        const cacheKey = `relatedTracks:${decodedArtistName}:${decodedSongName}`;
 
-    // Try MongoDB cache first
-    await connectDB();
-    const mongoCache = await SongCache.findOne({ cacheKey });
-    if (mongoCache) {
-      console.log("MongoDB cache hit for", cacheKey);
-      res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
-      return res.status(200).json(mongoCache.data);
-    }
-
-    // 2️⃣ Try Redis cache next
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      console.log("redis cache hit for", cacheKey);
-      res.setHeader(
-        "Cache-Control",
-        "public, s-maxage=2419200, stale-while-revalidate"
-      );
-      return res.status(200).json(cached);
-    }
-    // 3️⃣ Fetch from Last.fm if not cached
-    const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
-      decodedArtistName
-    )}&track=${encodeURIComponent(decodedSongName)}&limit=15&api_key=${LAST_FM_API_KEY}&format=json`;
-
-    const response = await fetch(apiUrl);
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch related tracks");
-    }
-
-    const data = await response.json();
-    let tracks = data.similartracks?.track;
-
-    if (!tracks) {
-      return res.status(404).json({ error: "No related tracks found" });
-    }
-
-    if (!Array.isArray(tracks)) {
-      tracks = [tracks]; // normalize
-    }
-
-    if (!tracks.length) {
-      return res.status(404).json({ error: "No related tracks found" });
-    }
-
-    // Map directly from track.getsimilar results
-    const relatedTracksRaw = tracks.map((track) => ({
-      name: track.name,
-      artist: track.artist.name,
-    }));
-
-    // Fetch Spotify images for each track
-    const accessToken = await getAlbumAccessToken();
-    const relatedTracks = await Promise.all(
-      relatedTracksRaw.map(async (track) => {
-        try {
-          const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-            `${track.artist} ${track.name}`
-          )}&type=track&limit=1`;
-
-          const spotifyResponse = await fetch(spotifyApiUrl, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-
-          if (!spotifyResponse.ok) throw new Error("Spotify fetch failed");
-
-          const spotifyData = await spotifyResponse.json();
-          const image =
-            spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
-
-          return { ...track, image };
-        } catch (err) {
-          return { ...track, image: "/placeholder.jpg" };
+        // Try MongoDB cache first
+        await connectDB();
+        const mongoCache = await SongCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=2419200, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
         }
-      })
-    );
 
-    // 4️⃣ Save to Redis + local cache for 28 days
-    await redis.set(cacheKey, relatedTracks, { ex: 2419200 });
-    // 5️⃣ Save to MongoDB
-    await SongCache.updateOne(
-      { cacheKey },
-      { $set: { data: relatedTracks, createdAt: new Date() } },
-      { upsert: true }
-    );
+        // 2️⃣ Try Redis cache next
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          console.log("redis cache hit for", cacheKey);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=2419200, stale-while-revalidate"
+          );
+          return res.status(200).json(cached);
+        }
+        // 3️⃣ Fetch from Last.fm if not cached
+        const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(
+          decodedArtistName
+        )}&track=${encodeURIComponent(decodedSongName)}&limit=15&api_key=${LAST_FM_API_KEY}&format=json`;
 
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=2419200, stale-while-revalidate"
-    );
-    return res.status(200).json(relatedTracks);
-  } catch (err) {
-    console.error("Last.fm API Error:", err);
-    return res.status(500).json({ error: "Failed to fetch related tracks" });
-  }
-}
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch related tracks");
+        }
+
+        const data = await response.json();
+        let tracks = data.similartracks?.track;
+
+        if (!tracks) {
+          return res.status(404).json({ error: "No related tracks found" });
+        }
+
+        if (!Array.isArray(tracks)) {
+          tracks = [tracks]; // normalize
+        }
+
+        if (!tracks.length) {
+          return res.status(404).json({ error: "No related tracks found" });
+        }
+
+        // Map directly from track.getsimilar results
+        const relatedTracksRaw = tracks.map((track) => ({
+          name: track.name,
+          artist: track.artist.name,
+        }));
+
+        // Fetch Spotify images for each track
+        const accessToken = await getAlbumAccessToken();
+        const relatedTracks = await Promise.all(
+          relatedTracksRaw.map(async (track) => {
+            try {
+              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+                `${track.artist} ${track.name}`
+              )}&type=track&limit=1`;
+
+              const spotifyResponse = await fetch(spotifyApiUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+
+              if (!spotifyResponse.ok) throw new Error("Spotify fetch failed");
+
+              const spotifyData = await spotifyResponse.json();
+              const image =
+                spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
+
+              return { ...track, image };
+            } catch (err) {
+              return { ...track, image: "/placeholder.jpg" };
+            }
+          })
+        );
+
+        // 4️⃣ Save to Redis + local cache for 28 days
+        await redis.set(cacheKey, relatedTracks, { ex: 2419200 });
+        // 5️⃣ Save to MongoDB
+        await SongCache.updateOne(
+          { cacheKey },
+          { $set: { data: relatedTracks, createdAt: new Date() } },
+          { upsert: true }
+        );
+
+        res.setHeader(
+          "Cache-Control",
+          "s-maxage=2419200, stale-while-revalidate"
+        );
+        return res.status(200).json(relatedTracks);
+      } catch (err) {
+        console.error("Last.fm API Error:", err);
+        return res.status(500).json({ error: "Failed to fetch related tracks" });
+      }
+    }
     // Artist details endpoints 
     else if (type === "artistDetails") {
       if (!artistName) {
@@ -838,10 +819,10 @@ export default async function handler(req, res) {
         // 1️⃣ Try MongoDB cache first
         await connectDB();
         const cacheKey = `artistAlbums:${artistId}`;
-        const mongoCache = await SongCache.findOne({ cacheKey });
+        const mongoCache = await ArtistAlbumsCache.findOne({ cacheKey });
         if (mongoCache) {
           console.log("MongoDB cache hit for", cacheKey);
-          res.setHeader("Cache-Control", "public, s-maxage=7200, stale-while-revalidate");
+          res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
 
@@ -861,7 +842,7 @@ export default async function handler(req, res) {
         }
 
         // Save to MongoDB
-        await SongCache.updateOne(
+        await ArtistAlbumsCache.updateOne(
           { cacheKey },
           { $set: { data: albumsData.items, createdAt: new Date() } },
           { upsert: true }

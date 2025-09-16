@@ -205,6 +205,15 @@ export default function ArtistPage() {
 
       <h2>Related Artists</h2>
 
+       <div
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          gap: "20px",
+          padding: "10px",
+        }}
+      >
+
       {relatedArtists.length > 0 ? (
         relatedArtists.map((artist, index) => (
           <div
@@ -239,6 +248,8 @@ export default function ArtistPage() {
       ) : (
         <p>No related artists found.</p>
       )}
+
+      </div>
   
       <Footer />
 
