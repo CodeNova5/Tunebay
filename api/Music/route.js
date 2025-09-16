@@ -753,12 +753,12 @@ export default async function handler(req, res) {
       }
     }
 
-    else if (type === "relatedArtists") {
-      if (!artistName) {
+      else if (type === "relatedArtists") {
+        if (!artistName) {
         return res.status(400).json({ error: "Missing artist name" });
-      }
+        }
 
-      try {
+        try {
         const cacheKey = `relatedArtists:${decodedArtistName}`;
         // 1 Try MongoDB cache first
         await connectDB();
@@ -787,10 +787,35 @@ export default async function handler(req, res) {
         }
 
         // Map Last.fm response to a cleaner format
-        const relatedArtists = lastFmData.similarartists.artist.map((artist) => ({
+        const relatedArtistsRaw = lastFmData.similarartists.artist.map((artist) => ({
           name: artist.name,
           url: artist.url || null,
         }));
+
+        // Fetch Spotify image for each artist
+        const accessToken = await getAlbumAccessToken();
+        const relatedArtists = await Promise.all(
+          relatedArtistsRaw.map(async (artist) => {
+          try {
+            const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+            artist.name
+            )}&type=artist&limit=1`;
+
+            const spotifyResponse = await fetch(spotifyApiUrl, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            });
+
+            if (!spotifyResponse.ok) throw new Error("Spotify fetch failed");
+
+            const spotifyData = await spotifyResponse.json();
+            const image = spotifyData.artists?.items?.[0]?.images?.[0]?.url || "/placeholder.jpg";
+
+            return { ...artist, image };
+          } catch (err) {
+            return { ...artist, image: "/placeholder.jpg" };
+          }
+          })
+        );
 
         // save to mongodb
         await SongCache.updateOne(
@@ -799,18 +824,17 @@ export default async function handler(req, res) {
           { upsert: true }
         );
 
-
         res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
         return res.status(200).json(relatedArtists);
-      } catch (err) {
+        } catch (err) {
         console.error("Last.fm API Error:", err);
         return res.status(500).json({ error: "Failed to fetch related artists" });
+        }
       }
-    }
 
 
 
-    else if (type === "artistAlbums") {
+      else if (type === "artistAlbums") {
       if (!artistId) {
         return res.status(400).json({ error: "Missing artist Id" });
       }
