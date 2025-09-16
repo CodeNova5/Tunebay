@@ -16,8 +16,8 @@ let artistAccessToken = null;
 let albumAccessToken = null;
 import axios from "axios";
 import SongCache from "../../models/songCache.js";
-import ArtistAlbumsCache from "../../models/songCache.js";
-import ArtistSongsCache from "../../models/songCache.js";
+import { ArtistAlbumsCache } from "../../models/songCache.js";
+import { ArtistSongsCache } from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
 
 let artistTokenExpiresAt = 0;
