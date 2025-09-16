@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import AlbumPage from "./AlbumPage";
-import SongCache from "../../../../../models/songCache.js";
+import { SongCache } from "../../../../../models/songCache.js";
 import { connectDB } from "../../../../../lib/mongodb.js";
 
 // Server-side metadata generation

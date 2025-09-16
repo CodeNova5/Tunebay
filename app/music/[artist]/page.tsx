@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import ArtistPage from "./ArtistPage";
-import SongCache from "../../../models/songCache.js"; 
+import { SongCache } from "../../../models/songCache.js"; 
 import { connectDB } from "../../../lib/mongodb.js";
 // Server-side metadata generation
 export async function generateMetadata(props: any): Promise<Metadata> {
