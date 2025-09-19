@@ -553,8 +553,19 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: "No songs found for this artist" });
         }
 
+        // 🔹 Filter tracks to only keep ones where the artist matches
+        const filteredTracks = data.tracks.items.filter(track =>
+          track.artists.some(a =>
+            a.name.toLowerCase() === decodedArtistName.toLowerCase()
+          )
+        );
+
+        if (!filteredTracks.length) {
+          return res.status(404).json({ error: "No exact matches for this artist" });
+        }
+
         // Keep only required fields
-        artistSongs = data.tracks.items.map((track) => ({
+        artistSongs = filteredTracks.map((track) => ({
           id: track.id,
           name: track.name,
           artists: track.artists.map((artist) => ({ name: artist.name })),
@@ -652,7 +663,7 @@ export default async function handler(req, res) {
           })
         );
 
-      
+
         // 5️⃣ Save to MongoDB
         await SongCache.updateOne(
           { cacheKey },
@@ -741,12 +752,12 @@ export default async function handler(req, res) {
       }
     }
 
-      else if (type === "relatedArtists") {
-        if (!artistName) {
+    else if (type === "relatedArtists") {
+      if (!artistName) {
         return res.status(400).json({ error: "Missing artist name" });
-        }
+      }
 
-        try {
+      try {
         const cacheKey = `relatedArtists:${decodedArtistName}`;
         // 1 Try MongoDB cache first
         await connectDB();
@@ -784,24 +795,24 @@ export default async function handler(req, res) {
         const accessToken = await getAlbumAccessToken();
         const relatedArtists = await Promise.all(
           relatedArtistsRaw.map(async (artist) => {
-          try {
-            const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-            artist.name
-            )}&type=artist&limit=1`;
+            try {
+              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+                artist.name
+              )}&type=artist&limit=1`;
 
-            const spotifyResponse = await fetch(spotifyApiUrl, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-            });
+              const spotifyResponse = await fetch(spotifyApiUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
 
-            if (!spotifyResponse.ok) throw new Error("Spotify fetch failed");
+              if (!spotifyResponse.ok) throw new Error("Spotify fetch failed");
 
-            const spotifyData = await spotifyResponse.json();
-            const image = spotifyData.artists?.items?.[0]?.images?.[0]?.url || "/placeholder.jpg";
+              const spotifyData = await spotifyResponse.json();
+              const image = spotifyData.artists?.items?.[0]?.images?.[0]?.url || "/placeholder.jpg";
 
-            return { ...artist, image };
-          } catch (err) {
-            return { ...artist, image: "/placeholder.jpg" };
-          }
+              return { ...artist, image };
+            } catch (err) {
+              return { ...artist, image: "/placeholder.jpg" };
+            }
           })
         );
 
@@ -814,15 +825,15 @@ export default async function handler(req, res) {
 
         res.setHeader("Cache-Control", "s-maxage=2419200, stale-while-revalidate");
         return res.status(200).json(relatedArtists);
-        } catch (err) {
+      } catch (err) {
         console.error("Last.fm API Error:", err);
         return res.status(500).json({ error: "Failed to fetch related artists" });
-        }
       }
+    }
 
 
 
-      else if (type === "artistAlbums") {
+    else if (type === "artistAlbums") {
       if (!artistId) {
         return res.status(400).json({ error: "Missing artist Id" });
       }
@@ -839,7 +850,7 @@ export default async function handler(req, res) {
         }
 
         // Fetch artist albums
-        const apiUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,appears_on&market=US&limit=10`;
+        const apiUrl = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album&market=US&limit=10`;
         const albumsResponse = await fetchWithSpotifyTokens(
           apiUrl,
           getSpotifyAccessToken,
@@ -854,12 +865,24 @@ export default async function handler(req, res) {
         }
 
         // Save to MongoDB
+        const formattedAlbums = albumsData.items.map((album) => ({
+          name: album.name,
+          artists: album.artists.map((artist) => ({
+            name: artist.name,
+            id: artist.id,
+            external_urls: artist.external_urls,
+          })),
+          releaseDate: album.release_date,
+          totalTracks: album.total_tracks,
+          image: album.images?.[0]?.url || "/placeholder.jpg",
+          id: album.id,
+        }));
+
         await ArtistAlbumsCache.updateOne(
           { cacheKey },
-          { $set: { data: albumsData.items, createdAt: new Date() } },
+          { $set: { data: formattedAlbums, createdAt: new Date() } },
           { upsert: true }
         );
-
 
         res.setHeader("Cache-Control", "s-maxage=7200, stale-while-revalidate");
         return res.status(200).json(albumsData.items.map((album) => ({

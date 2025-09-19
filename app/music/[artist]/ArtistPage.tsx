@@ -203,6 +203,8 @@ export default function ArtistPage() {
         )}
       </div>
 
+      <h2>Related Artists</h2>
+
       <div
         style={{
           display: "flex",
@@ -211,7 +213,7 @@ export default function ArtistPage() {
           padding: "10px",
         }}
       >
-        <h2>Related Artists</h2>
+
 
         {relatedArtists.length > 0 ? (
           relatedArtists.map((artist, index) => (
