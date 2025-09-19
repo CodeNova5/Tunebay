@@ -102,7 +102,13 @@ export default function ArtistPage() {
       <img
         src={artistDetails.image || "/placeholder.jpg"}
         alt={artistDetails.name}
-        style={{ borderRadius: "2px", width: "80%", height: "300px" }}
+        style={{
+          width: "180px",
+          height: "180px",
+          objectFit: "cover",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+          margin: "20px auto"
+        }}
       />
       <div style={{ margin: "20px 0" }}>
         <span
