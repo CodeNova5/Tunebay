@@ -124,7 +124,7 @@ export default function ArtistPage() {
             letterSpacing: "1px",
           }}
         >
-          Followers: {artistDetails.followers}
+          Followers: {artistDetails.followers?.toLocaleString()}
         </span>
       </div>
       <CommentShareModule playlist={undefined} track={undefined} album={undefined} artist={artistDetails} />
