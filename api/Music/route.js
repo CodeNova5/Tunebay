@@ -19,7 +19,8 @@ import { SongCache } from "../../models/songCache.js";
 import { ArtistAlbumsCache } from "../../models/songCache.js";
 import { ArtistSongsCache } from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
-
+// ocktokit is ESM only, so dynamic import
+import { Octokit } from "@octokit/rest";
 let artistTokenExpiresAt = 0;
 
 async function getSpotifyAccessToken() {
@@ -519,7 +520,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Failed to check file on GitHub" });
       }
     }
-    
+
     else if (type === "lyrics") {
         if (!artistName || !songName) {
           return res.status(400).json({ error: "Missing artist name or song name" });
