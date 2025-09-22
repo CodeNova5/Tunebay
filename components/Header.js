@@ -151,7 +151,7 @@ const Header = () => {
           textOverflow: "ellipsis", // ✅ truncate if needed
         }}
       >
-        Tuneflix
+        Tunebay
       </Link>
 
       {/* Right: Search */}
