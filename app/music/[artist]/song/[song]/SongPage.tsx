@@ -284,12 +284,16 @@ export default function SongPage() {
 
         if (response.ok) {
             const data = await response.json();
-             setDownloadUrl(data.download_url);
+            setDownloadUrl(data.download_url);
             return data.download_url || null; // match server's property
-           
+
         }
         return null;
     }
+
+    // Call checkGithubFileExists inside your useEffect where you handle MP3 conversion and downloading.
+    // If the file exists, set the downloadUrl state and skip conversion/upload.
+
 
     // Add this helper to upload using FormData (for formidable)
     async function uploadFileToGithub(artistName: string, fileName: string, blob: Blob) {
@@ -304,16 +308,20 @@ export default function SongPage() {
     }
     // Replace your useEffect for MP3 conversion and download with this:
     React.useEffect(() => {
+        if (!lyricsVideoId || !track) return;
+        const formatTitle = (title: string): string =>
+            title
+                .split(" ")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join("-");
+
+        const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
+
+        checkGithubFileExists(fileName);
+        
         async function processAudio() {
             if (!lyricsVideoId || !track) return;
 
-            const formatTitle = (title: string): string =>
-                title
-                    .split(" ")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join("-");
-
-            const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
 
             // 1. Check if file exists in GitHub
             const githubUrl = await checkGithubFileExists(fileName);

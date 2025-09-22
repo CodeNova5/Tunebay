@@ -503,6 +503,9 @@ export default async function handler(req, res) {
 
         try {
           const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
+          
+        
+          console.log("File exists on GitHub:", path);
           return res.status(200).json({
             exists: true,
             sha: data.sha,
@@ -510,7 +513,9 @@ export default async function handler(req, res) {
           });
         } catch (error) {
           // If 404, file doesn't exist
+          
           if (error.status === 404) {
+            console.log("File does not exist on GitHub:", path);
             return res.status(200).json({ exists: false });
           }
           throw error; // rethrow if other error
