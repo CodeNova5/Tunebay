@@ -280,12 +280,13 @@ export default function SongPage() {
 
     async function checkGithubFileExists(fileName: string): Promise<string | null> {
         const artistName = track?.artists[0]?.name || "Unknown Artist";
-        const response = await fetch(`/api/comments/uploadFile?type=checkFileExistence&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
+        const response = await fetch(`/api/Music/route?type=checkGithubFile&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
 
         if (response.ok) {
             const data = await response.json();
+             setDownloadUrl(data.download_url);
             return data.download_url || null; // match server's property
-            setDownloadUrl(data.download_url);
+           
         }
         return null;
     }

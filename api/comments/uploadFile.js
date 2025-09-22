@@ -27,27 +27,6 @@ export default async function handler(req, res) {
     try {
       const { type } = req.query;
 
-      if (type === "checkFileExistence") {
-        // Dynamically import Octokit (ESM)
-        const { Octokit } = await import("@octokit/rest");
-
-        // Initialize Octokit with GitHub token
-        const octokit = new Octokit({
-          auth: process.env.GITHUB_TOKEN,
-        });
-
-        const owner = "CodeNova5";
-        const repo = "Music-Backend";
-        const path = `public/music/${artistName}/${uploadedFileName}`;
-
-        try {
-          const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
-          return res.status(200).json({ exists: true, sha: data.sha, download_url: data.download_url });
-        } catch (error) {
-          return res.status(200).json({ exists: false });
-        }
-      }
-
       if (type === "music") {
         const fileBuffer = await fs.promises.readFile(uploadedFile.filepath);
 
