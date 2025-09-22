@@ -103,8 +103,8 @@ export default function ArtistPage() {
         src={artistDetails.image || "/placeholder.jpg"}
         alt={artistDetails.name}
         style={{
-          width: "180px",
-          height: "180px",
+          width: "250px",
+          height: "330px",
           objectFit: "cover",
           boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
           margin: "20px auto"
