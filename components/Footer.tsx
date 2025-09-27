@@ -5,14 +5,14 @@ import { Mail, Phone, MessageCircle } from "lucide-react";
 export default function Footer() {
   return (
     <footer className="bg-black text-white py-10 mt-16">
-      <hr style={{borderColor: 'gray'}} />
+      <hr style={{ borderColor: 'gray' }} />
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-        
+
         {/* Brand / About */}
         <div>
           <h2 className="text-2xl font-bold mb-3">Tunebay</h2>
           <p className="text-gray-400 leading-relaxed">
-            Tunebay is your go-to hub for exploring, streaming, and downloading 
+            Tunebay is your go-to hub for exploring, streaming, and downloading
             music effortlessly. We bring tunes closer to you with simplicity and style.
           </p>
         </div>
@@ -45,11 +45,15 @@ export default function Footer() {
           <ul className="space-y-3 text-gray-400">
             <li className="flex items-center gap-2">
               <Phone size={18} className="text-white" />
-              <span>+234 907 208 9091</span>
+              <a href="tel:+2349072089091">
+                <span>+234 907 208 9091</span>
+              </a>
             </li>
             <li className="flex items-center gap-2">
               <Mail size={18} className="text-white" />
-              <span>codenova02@gmail.com</span>
+              <a href="mailto:codenova02@gamil.com">
+                <span>codenova02@gmail.com</span>
+              </a>
             </li>
             <li className="flex items-center gap-2">
               <MessageCircle size={18} className="text-white" />
