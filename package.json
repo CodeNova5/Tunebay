@@ -33,6 +33,7 @@
     "next": "^15.3.3",
     "next-connect": "^1.0.0",
     "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.6",
     "p-limit": "^6.2.0",
     "puppeteer": "^24.20.0",
     "react": "^19.1.0",
