@@ -1253,7 +1253,7 @@ export default async function handler(req, res) {
         );
      
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
-        return res.status(200).json(nigerianSongs);
+        return res.status(200).json(nigerianSongsWithImages);
       } catch (err) {
         console.error("Last.fm API Error:", err);
         return res.status(500).json({ error: "Failed to fetch Nigerian songs" });

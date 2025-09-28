@@ -107,7 +107,7 @@ export default function HomePage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#111] text-white">
+        <div className="min-h-screen bg-[#111] text-white mt-20">
             <Header />
             <main className="max-w-screen-xl mx-auto py-6 sm:py-10">
                 <h1 className="text-2xl sm:text-4xl font-extrabold mb-8 text-center px-3">🎶 Discover Music</h1>
