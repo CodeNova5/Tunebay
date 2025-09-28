@@ -504,7 +504,7 @@ export default async function handler(req, res) {
           // First attempt with primary key
           response = await fetchFromRapidAPI(process.env.RAPIDAPI_KEY);
         } catch (err) {
-          if (err.response?.status === 429) {
+          if (err.response?.status === 429 || err.response?.status === 500) {
             console.warn("⚠️ Primary RapidAPI key limit exceeded, retrying with secondary key...");
 
             // Retry with secondary key
