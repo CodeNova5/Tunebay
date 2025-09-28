@@ -47,6 +47,7 @@ export default function HomePage() {
                 const res = await fetch(`/api/Music/route?type=nigerianSongs`);
                 if (!res.ok) throw new Error("Failed to fetch Nigerian songs");
                 setNigerianSongs(await res.json());
+                console.log(await res.json());
             } catch (err: any) {
                 setError(err.message);
             }
