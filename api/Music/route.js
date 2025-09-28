@@ -1216,16 +1216,42 @@ export default async function handler(req, res) {
         }
         const nigerianSongs = data.tracks.track.map((track) => ({
           title: track.name,
-          image: "/placeholder.jpg",
           artist: track.artist.name,
           url: track.url,
         }));
-        // Cache in mongodb for 7 days
+
+        // get spotify images for each track
+        const accessToken = await getArtistAccessToken();
+        const nigerianSongsWithImages = await Promise.all(
+          nigerianSongs.map(async (song) => {
+            try {
+              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+                `${song.artist} ${song.title}`
+              )}&type=track&limit=1`;
+              const spotifyResponse = await fetch(spotifyApiUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+              if (!spotifyResponse.ok) {
+                throw new Error(`Failed to fetch Spotify data for ${song.title} by ${song.artist}`);
+              }
+              const spotifyData = await spotifyResponse.json();
+              const image =
+                spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
+              return { ...song, image };
+            } catch (err) {
+              console.error(`Spotify API Error for track ${song.title} by ${song.artist}:`, err);
+              return { ...song, image: "/placeholder.jpg" };
+            }
+          })
+        );
+
+        // Cache in mongodb for 7days
         await SongCache.updateOne(
           { cacheKey },
-          { $set: { data: nigerianSongs, createdAt: new Date() } },
+          { $set: { data: nigerianSongsWithImages, createdAt: new Date() } },
           { upsert: true }
         );
+     
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(nigerianSongs);
       } catch (err) {
