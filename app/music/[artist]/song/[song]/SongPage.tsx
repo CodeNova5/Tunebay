@@ -276,38 +276,25 @@ export default function SongPage() {
         }
     }
 
-
-
-    async function checkGithubFileExists(fileName: string): Promise<string | null> {
-        const artistName = track?.artists[0]?.name || "Unknown Artist";
-        const response = await fetch(`/api/Music/route?type=checkGithubFile&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
-
-        if (response.ok) {
-            const data = await response.json();
-            setDownloadUrl(data.download_url);
-            return data.download_url || null; // match server's property
-
-        }
-        return null;
-    }
-
-    // Call checkGithubFileExists inside your useEffect where you handle MP3 conversion and downloading.
-    // If the file exists, set the downloadUrl state and skip conversion/upload.
-
-
-    // Add this helper to upload using FormData (for formidable)
-    async function uploadFileToGithub(artistName: string, fileName: string, blob: Blob) {
-        const formData = new FormData();
-        formData.append("file", blob, fileName);
-        formData.append("fileName", fileName);
-        formData.append("artistName", artistName);
-        await fetch("/api/comments/uploadFile?type=music", {
-            method: "POST",
-            body: formData,
-        });
-    }
     // Replace your useEffect for MP3 conversion and download with this:
     React.useEffect(() => {
+        async function checkGithubFileExists(fileName: string): Promise<string | null> {
+            const artistName = track?.artists[0]?.name || "Unknown Artist";
+            const response = await fetch(`/api/Music/route?type=checkGithubFile&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
+
+            if (response.ok) {
+                const data = await response.json();
+                setDownloadUrl(data.download_url);
+                return data.download_url || null; // match server's property
+            }
+
+            else {
+                processAudio();
+            }
+
+            return null;
+        }
+
         if (!lyricsVideoId || !track) return;
         const formatTitle = (title: string): string =>
             title
@@ -318,7 +305,7 @@ export default function SongPage() {
         const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
 
         checkGithubFileExists(fileName);
-        
+
         async function processAudio() {
             if (!lyricsVideoId || !track) return;
 
@@ -387,11 +374,24 @@ export default function SongPage() {
                 setIsUploading(false);
             }
         }
-
-        if (lyricsVideoId && track && !downloadUrl) {
-            processAudio();
-        }
     }, [lyricsVideoId, track]);
+
+    // Call checkGithubFileExists inside your useEffect where you handle MP3 conversion and downloading.
+    // If the file exists, set the downloadUrl state and skip conversion/upload.
+
+
+    // Add this helper to upload using FormData (for formidable)
+    async function uploadFileToGithub(artistName: string, fileName: string, blob: Blob) {
+        const formData = new FormData();
+        formData.append("file", blob, fileName);
+        formData.append("fileName", fileName);
+        formData.append("artistName", artistName);
+        await fetch("/api/comments/uploadFile?type=music", {
+            method: "POST",
+            body: formData,
+        });
+    }
+
 
 
     const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
