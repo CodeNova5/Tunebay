@@ -537,38 +537,32 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: "Missing artistName or fileName" });
         }
 
-        const octokit = new Octokit({
-          auth: process.env.GITHUB_TOKEN,
+        const fileUrl = `https://github.com/CodeNova5/Music-Backend/raw/refs/heads/main/public/music/${encodeURIComponent(
+          artistName
+        )}/${encodeURIComponent(fileName)}`;
+
+        // fetch from GitHub server-side
+        const response = await fetch(fileUrl, {
+          headers: {
+            Authorization: `token ${process.env.GITHUB_TOKEN}`, // needed if repo is private
+          },
         });
 
-        const owner = "CodeNova5";
-        const repo = "Music-Backend";
-        const path = `public/music/${artistName}/${fileName}`;
-
-        try {
-          const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
-
-
-          console.log("File exists on GitHub:", path);
-          return res.status(200).json({
-            exists: true,
-            sha: data.sha,
-            downloadUrl: data.download_url, // ✅ camelCase for client
-          });
-        } catch (error) {
-          // If 404, file doesn't exist
-
-          if (error.status === 404) {
-            console.log("File does not exist on GitHub:", path);
-            return res.status(200).json({ exists: false });
-          }
-          throw error; // rethrow if other error
+        if (!response.ok) {
+          return res.status(response.status).json({ error: "File not found" });
         }
+
+        // stream file back with CORS headers
+        res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mpeg");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        const buffer = Buffer.from(await response.arrayBuffer());
+        return res.send(buffer);
       } catch (err) {
-        console.error("GitHub API Error:", err);
-        return res.status(500).json({ error: "Failed to check file on GitHub" });
+        console.error("GitHub proxy error:", err);
+        return res.status(500).json({ error: "Failed to fetch file from GitHub" });
       }
     }
+
 
     else if (type === "lyrics") {
       if (!artistName || !songName) {
@@ -1251,7 +1245,7 @@ export default async function handler(req, res) {
           { $set: { data: nigerianSongsWithImages, createdAt: new Date() } },
           { upsert: true }
         );
-     
+
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(nigerianSongsWithImages);
       } catch (err) {

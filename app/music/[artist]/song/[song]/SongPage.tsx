@@ -297,15 +297,12 @@ export default function SongPage() {
             );
 
             if (response.ok) {
-                const rawUrl = `https://github.com/CodeNova5/Music-Backend/raw/refs/heads/main/public/music/${encodeURIComponent(artistName)}/${encodeURIComponent(fileName)}`;
-                // Comvert to a blob 
-                const res = await fetch(rawUrl);
-                if (!res.ok) throw new Error("Failed to fetch file");
+                const res = await fetch(`/api?type=checkGithubFile&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
+                if (!res.ok) throw new Error("Failed to fetch from backend");
 
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 setDownloadUrl(url);
-                console.log("File exists on GitHub, using URL:", rawUrl);
                 return url;
             } else {
                 processAudio();
