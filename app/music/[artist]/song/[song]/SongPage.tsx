@@ -298,8 +298,11 @@ export default function SongPage() {
 
     if (response.ok) {
       const data = await response.json();
-      return data.download_url || null;
-    }
+      setDownloadUrl(url);
+      console.log("Ok");
+ return data.download_url || null;
+       
+  }
     return null;
   }
 
