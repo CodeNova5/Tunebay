@@ -297,34 +297,13 @@ export default function SongPage() {
             );
 
             if (response.ok) {
-                const data = await response.json();
-                console.log("GitHub file check response:", data);
-                if (data.download_url) {
-                    try {
-                        // fetch the actual file
-                        const fileRes = await fetch(data.download_url);
-
-                        if (!fileRes.ok) {
-                            throw new Error("Failed to fetch file");
-                        }
-
-                        const blob = await fileRes.blob();
-                        const objectUrl = URL.createObjectURL(blob);
-
-                        setDownloadUrl(objectUrl);
-                        console.log("✅ Blob URL created:", objectUrl);
-
-                        return objectUrl;
-                    } catch (err) {
-                        console.error("Error creating blob URL:", err);
-                        return null;
-                    }
-                }
-
+                const rawUrl = `https://github.com/CodeNova5/Music-Backend/raw/refs/heads/main/public/music/${encodeURIComponent(artistName)}/${encodeURIComponent(fileName)}`;
+                setDownloadUrl(rawUrl);
+                console.log("File exists on GitHub, using URL:", rawUrl);
+                return rawUrl;
+            } else {
                 return null;
             }
-
-            return null;
         }
 
         async function processAudio() {
