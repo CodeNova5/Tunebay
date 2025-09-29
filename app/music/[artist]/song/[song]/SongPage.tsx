@@ -301,8 +301,11 @@ export default function SongPage() {
                 setDownloadUrl(data.download_url);
                 console.log("Ok");
                 return data.download_url || null;
-
             }
+            else {
+                console.log("Not ok");
+                await processAudio();
+            };
             return null;
         }
 
@@ -364,8 +367,6 @@ export default function SongPage() {
             const githubUrl = await checkGithubFileExists(fileName);
             if (githubUrl) {
                 setDownloadUrl(githubUrl);
-            } else {
-                await processAudio();
             }
         }
 
