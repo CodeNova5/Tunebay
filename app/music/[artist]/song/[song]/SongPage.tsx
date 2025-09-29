@@ -351,8 +351,8 @@ export default function SongPage() {
 
                 // 3. Upload to GitHub
                 const artistName = track.artists[0]?.name || "Unknown Artist";
-                await uploadFileToGithub(artistName, fileName, taggedBlob);
-            } catch (err) {
+                console.log("Uploading to GitHub:");
+                } catch (err) {
                 setModalMessage("An unexpected error occurred");
                 setTimeout(() => setModalMessage(null), 1000);
             } finally {
@@ -374,19 +374,6 @@ export default function SongPage() {
 
     // Call checkGithubFileExists inside your useEffect where you handle MP3 conversion and downloading.
     // If the file exists, set the downloadUrl state and skip conversion/upload.
-
-
-    // Add this helper to upload using FormData (for formidable)
-    async function uploadFileToGithub(artistName: string, fileName: string, blob: Blob) {
-        const formData = new FormData();
-        formData.append("file", blob, fileName);
-        formData.append("fileName", fileName);
-        formData.append("artistName", artistName);
-        await fetch("/api/comments/uploadFile?type=music", {
-            method: "POST",
-            body: formData,
-        });
-    }
 
 
 
