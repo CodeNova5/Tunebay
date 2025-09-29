@@ -298,7 +298,7 @@ export default function SongPage() {
 
     if (response.ok) {
       const data = await response.json();
-      setDownloadUrl(url);
+      setDownloadUrl(data.download_url);
       console.log("Ok");
  return data.download_url || null;
        
