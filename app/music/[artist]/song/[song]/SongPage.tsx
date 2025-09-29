@@ -278,103 +278,94 @@ export default function SongPage() {
 
     // Replace your useEffect for MP3 conversion and download with this:
     React.useEffect(() => {
-        async function checkGithubFileExists(fileName: string): Promise<string | null> {
-            const artistName = track?.artists[0]?.name || "Unknown Artist";
-            const response = await fetch(`/api/Music/route?type=checkGithubFile&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
+  if (!lyricsVideoId || !track) return;
 
-            if (response.ok) {
-                const data = await response.json();
-                setDownloadUrl(data.download_url);
-                return data.download_url || null; // match server's property
-            }
+  const formatTitle = (title: string): string =>
+    title
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("-");
 
-            else {
-                processAudio();
-            }
+  const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
 
-            return null;
-        }
+  async function checkGithubFileExists(fileName: string): Promise<string | null> {
+    const artistName = track?.artists[0]?.name || "Unknown Artist";
+    const response = await fetch(
+      `/api/Music/route?type=checkGithubFile&artistName=${encodeURIComponent(
+        artistName
+      )}&fileName=${encodeURIComponent(fileName)}`
+    );
 
-        if (!lyricsVideoId || !track) return;
-        const formatTitle = (title: string): string =>
-            title
-                .split(" ")
-                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join("-");
+    if (response.ok) {
+      const data = await response.json();
+      return data.download_url || null;
+    }
+    return null;
+  }
 
-        const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
+  async function processAudio() {
+    setIsUploading(true);
 
-        checkGithubFileExists(fileName);
+    try {
+      // 1. Fetch YouTube audio
+      const ytResponse = await fetch(
+        `/api/Music/route?type=youtubeToMp3&videoId=${lyricsVideoId}`
+      );
+      if (!ytResponse.ok) throw new Error("Failed to fetch audio");
+      const data = await ytResponse.json();
+      if (!data.downloadLink) throw new Error("No audio URL found");
 
-        async function processAudio() {
-            if (!lyricsVideoId || !track) return;
+      const mp3Response = await fetch(data.downloadLink);
+      const mp3Blob = await mp3Response.blob();
+      const arrayBuffer = await mp3Blob.arrayBuffer();
 
+      // 2. Add metadata
+      const writer = new ID3Writer(arrayBuffer);
+      writer
+        .setFrame("TIT2", track.name ?? "Unknown Title")
+        .setFrame("TPE1", [track.artists[0]?.name ?? "Unknown Artist"])
+        .setFrame("TALB", track.album?.name ?? "Unknown Album");
 
-            // 1. Check if file exists in GitHub
-            const githubUrl = await checkGithubFileExists(fileName);
-            if (githubUrl) {
-                setDownloadUrl(githubUrl);
-                return;
-            }
+      const coverImageUrl = track.album?.images[0]?.url;
+      if (coverImageUrl) {
+        const coverResponse = await fetch(coverImageUrl);
+        const coverBlob = await coverResponse.blob();
+        const coverArrayBuffer = await coverBlob.arrayBuffer();
+        (writer as any).setFrame("APIC", {
+          type: 3,
+          data: new Uint8Array(coverArrayBuffer),
+          description: "Cover",
+        });
+      }
 
-            setIsUploading(true);
+      writer.addTag();
+      const taggedBlob = writer.getBlob();
+      const url = window.URL.createObjectURL(taggedBlob);
 
-            try {
-                // 2. Fetch YouTube to get audio link
-                const ytResponse = await fetch(
-                    `/api/Music/route?type=youtubeToMp3&videoId=${lyricsVideoId}`
-                );
-                if (!ytResponse.ok) throw new Error("Failed to fetch audio");
-                const data = await ytResponse.json();
-                if (!data.downloadLink) throw new Error("No audio URL found");
-                const mp3Response = await fetch(data.downloadLink);
-                const mp3Blob = await mp3Response.blob();
-                const arrayBuffer = await mp3Blob.arrayBuffer();
+      setDownloadUrl(url);
 
-                // 4. Add metadata (title, artist, album, cover art)
-                const writer = new ID3Writer(arrayBuffer);
-                writer.setFrame("TIT2", track.name ?? "Unknown Title")
-                    .setFrame("TPE1", [track.artists[0]?.name ?? "Unknown Artist"])
-                    .setFrame("TALB", track.album?.name ?? "Unknown Album");
+      // 3. Upload to GitHub
+      const artistName = track.artists[0]?.name || "Unknown Artist";
+      await uploadFileToGithub(artistName, fileName, taggedBlob);
+    } catch (err) {
+      setModalMessage("An unexpected error occurred");
+      setTimeout(() => setModalMessage(null), 1000);
+    } finally {
+      setIsUploading(false);
+    }
+  }
 
-                const coverImageUrl = track.album?.images[0]?.url;
-                if (coverImageUrl) {
-                    const coverResponse = await fetch(coverImageUrl);
-                    const coverBlob = await coverResponse.blob();
-                    const coverArrayBuffer = await coverBlob.arrayBuffer();
-                    (writer as any).setFrame("APIC", {
-                        type: 3,
-                        data: new Uint8Array(coverArrayBuffer),
-                        description: "Cover",
-                    });
-                }
+  async function init() {
+    const githubUrl = await checkGithubFileExists(fileName);
+    if (githubUrl) {
+      setDownloadUrl(githubUrl);
+    } else {
+      await processAudio();
+    }
+  }
 
-                writer.addTag();
-                const taggedBlob = writer.getBlob();
-                const url = window.URL.createObjectURL(taggedBlob);
-
-                // 5. Trigger download in browser
-                const a = document.createElement("a");
-                a.id = "download-link"; // Add an ID for easier selection
-                a.style.display = "none";
-                a.href = url;
-                document.body.appendChild(a);
-
-
-                setDownloadUrl(url);
-
-                // 6. Upload to GitHub (same as before)
-                const artistName = track.artists[0]?.name || "Unknown Artist";
-                await uploadFileToGithub(artistName, fileName, taggedBlob);
-
-                setIsUploading(false);
-            } catch (err) {
-                setModalMessage("An unexpected error occurred");
-                setTimeout(() => setModalMessage(null), 1000);
-                setIsUploading(false);
-            }
-        }
-    }, [lyricsVideoId, track]);
+  init();
+}, [lyricsVideoId, track]);
 
     // Call checkGithubFileExists inside your useEffect where you handle MP3 conversion and downloading.
     // If the file exists, set the downloadUrl state and skip conversion/upload.
