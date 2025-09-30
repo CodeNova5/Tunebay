@@ -11,7 +11,7 @@ export async function generateMetadata(props: any,): Promise<Metadata> {
   const baseUrl = "https://tunebay.vercel.app"; // fallback to your production domain
 
   // Check if artist and song are in mongodb
-  const cacheKey = `song-${artist}-${song}`;
+  const cacheKey = `song-${decodeURIComponent(artist)}-${decodeURIComponent(song)}`;
   // 🟡 2. Try MongoDB cache
   await connectDB();
   const mongoCache = await SongCache.findOne({ cacheKey });
@@ -56,7 +56,9 @@ export async function generateMetadata(props: any,): Promise<Metadata> {
     artist
   )}&songName=${encodeURIComponent(song)}`;
 
-  const res = await fetch(apiUrl, { cache: "no-store" });
+  // Set cache immutable to 1 year for song details
+  const res = await fetch(apiUrl, { next: { revalidate: 31536000 } });
+ 
   if (!res.ok) {
     return {
       title: "Song Not Found | Tuneflix",

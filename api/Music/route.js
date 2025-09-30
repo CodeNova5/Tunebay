@@ -274,19 +274,8 @@ export default async function handler(req, res) {
         const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
         let songData = null;
 
-        // 🟢 1. Try Redis first
-        try {
-          const cachedRedis = await redis.get(cacheKey);
-          if (cachedRedis) {
-            console.log("✅ Redis cache hit for", cacheKey);
-            res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
-            return res.status(200).json(JSON.parse(cachedRedis));
-          }
-        } catch (redisErr) {
-          console.warn("⚠️ Redis unavailable, falling back to MongoDB:", redisErr.message);
-        }
 
-        // 🟡 2. Try MongoDB cache
+        // 🟡 1. Try MongoDB cache
         await connectDB();
         const mongoCache = await SongCache.findOne({ cacheKey });
         if (mongoCache) {
@@ -296,7 +285,7 @@ export default async function handler(req, res) {
         }
 
 
-        // 🔵 3. Fetch from Spotify if not cached anywhere
+        // 🔵 2. Fetch from Spotify if not cached anywhere
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           `${decodedArtistName} ${decodedSongName}`
         )}&type=track&limit=1`;
@@ -329,14 +318,14 @@ export default async function handler(req, res) {
           duration_ms: track.duration_ms,
         };
 
-        // 🔄 4. Save to Redis 1 month (if available)
+        // 🔄 3. Save to Redis 1 month (if available)
         try {
           await redis.set(cacheKey, JSON.stringify(songData), { ex: 2592000 });
         } catch (redisErr) {
           console.warn("⚠️ Failed to write to Redis:", redisErr.message);
         }
 
-        // 🔄 Save new cache
+        // 🔄 4. Save new cache
         await SongCache.updateOne(
           { cacheKey },
           { $set: { data: songData, createdAt: new Date() } },
@@ -344,7 +333,7 @@ export default async function handler(req, res) {
         );
 
 
-        // ✅ 6. Respond
+        // ✅ 5. Respond
         res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
         return res.status(200).json(songData);
 
