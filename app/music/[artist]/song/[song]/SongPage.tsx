@@ -276,7 +276,22 @@ export default function SongPage() {
         }
     }
 
-    // Replace your useEffect for MP3 conversion and download with this:
+    // Add this helper to check GitHub for the file
+    async function checkGithubFileExists(fileName: string): Promise<string | null> {
+        const artistName = track?.artists[0]?.name || "Unknown Artist";
+        const githubRawUrl = `https://raw.githubusercontent.com/CodeNova5/Music-Backend/main/public/music/${artistName}/${fileName}`;
+        try {
+            const res = await fetch(githubRawUrl, { method: "HEAD" });
+            if (res.ok) {
+                
+                return githubRawUrl;
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
     React.useEffect(() => {
         if (!lyricsVideoId || !track) return;
 
@@ -288,30 +303,15 @@ export default function SongPage() {
 
         const fileName = `${formatTitle(track.artists[0]?.name ?? "")}_-_${formatTitle(track.name ?? "")}.mp3`;
 
-        async function checkGithubFileExists(fileName: string): Promise<string | null> {
-            const artistName = track?.artists[0]?.name || "Unknown Artist";
-            const response = await fetch(
-                `/api/Music/route?type=checkGithubFile&artistName=${encodeURIComponent(
-                    artistName
-                )}&fileName=${encodeURIComponent(fileName)}`
-            );
-
-            if (response.ok) {
-                const res = await fetch(`/api?type=checkGithubFile&artistName=${encodeURIComponent(artistName)}&fileName=${encodeURIComponent(fileName)}`);
-                if (!res.ok) throw new Error("Failed to fetch from backend");
-
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                setDownloadUrl(url);
-                return url;
-            } else {
-                processAudio();
-                return null;
-            }
-        }
-
         async function processAudio() {
             if (!lyricsVideoId || !track) return;
+
+            // 1. Check if file exists in GitHub
+            const githubUrl = await checkGithubFileExists(fileName);
+            if (githubUrl) {
+                setDownloadUrl(githubUrl);
+                return;
+            }
 
             setIsUploading(true);
 
@@ -365,18 +365,12 @@ export default function SongPage() {
             }
         }
 
-        async function init() {
-            const githubUrl = await checkGithubFileExists(fileName);
-            if (githubUrl) {
-                setDownloadUrl(githubUrl);
-            }
+
+        if (lyricsVideoId && track && !downloadUrl) {
+            processAudio();
         }
-
-        init();
+        // eslint-disable-next-line
     }, [lyricsVideoId, track]);
-
-    // Call checkGithubFileExists inside your useEffect where you handle MP3 conversion and downloading.
-    // If the file exists, set the downloadUrl state and skip conversion/upload.
 
 
     // Add this helper to upload using FormData (for formidable)
@@ -599,16 +593,21 @@ export default function SongPage() {
                         observer.observe(document.body, { childList: true, subtree: true });
                     }
                     else {
-                        setIsUploading(false);
-                        const link = document.createElement("a");
-                        link.href = downloadUrl;
-                        link.download = cleanFileName;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-
                         setModalMessage("✅ Download has started");
-                        setTimeout(() => setModalMessage(null), 1000);
+                        setTimeout(() => setModalMessage(null), 2000);
+                        setIsUploading(false);
+                        const fileUrl = downloadUrl;
+                        fetch(fileUrl)
+                            .then(response => response.blob())
+                            .then(blob => {
+                                const link = document.createElement("a");
+                                link.href = URL.createObjectURL(blob);
+                                link.download = cleanFileName;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            })
+                            .catch(console.error);
                     }
                     setShowModal(true);
                 }}

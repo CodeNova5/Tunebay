@@ -529,41 +529,7 @@ export default async function handler(req, res) {
       }
     }
 
-    else if (type === "checkGithubFile") {
-      try {
-        const { artistName, fileName } = req.query;
-
-        if (!artistName || !fileName) {
-          return res.status(400).json({ message: "Missing artistName or fileName" });
-        }
-
-        const fileUrl = `https://github.com/CodeNova5/Music-Backend/raw/refs/heads/main/public/music/${encodeURIComponent(
-          artistName
-        )}/${encodeURIComponent(fileName)}`;
-
-        // fetch from GitHub server-side
-        const response = await fetch(fileUrl, {
-          headers: {
-            Authorization: `token ${process.env.GITHUB_TOKEN}`, // needed if repo is private
-          },
-        });
-
-        if (!response.ok) {
-          return res.status(response.status).json({ error: "File not found" });
-        }
-
-        // stream file back with CORS headers
-        res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mpeg");
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        const buffer = Buffer.from(await response.arrayBuffer());
-        return res.send(buffer);
-      } catch (err) {
-        console.error("GitHub proxy error:", err);
-        return res.status(500).json({ error: "Failed to fetch file from GitHub" });
-      }
-    }
-
-
+  
     else if (type === "lyrics") {
       if (!artistName || !songName) {
         return res.status(400).json({ error: "Missing artist name or song name" });
@@ -1245,7 +1211,7 @@ export default async function handler(req, res) {
           { $set: { data: nigerianSongsWithImages, createdAt: new Date() } },
           { upsert: true }
         );
-
+     
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(nigerianSongsWithImages);
       } catch (err) {
