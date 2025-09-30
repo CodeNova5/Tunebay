@@ -19,8 +19,8 @@ export async function generateMetadata(props: any,): Promise<Metadata> {
     console.log("✅ MongoDB cache hit for", cacheKey);
     // Return metadata from cached data if available
     const track = mongoCache.data;
-    const title = `${track.name} by ${track.artists.map((a: { name: string }) => a.name).join(", ")} | Tuneflix`;
-    const description = `Listen to "${track.name}" by ${track.artists.map((a: { name: string }) => a.name).join(", ")}. View album details, lyrics, YouTube video, and more on Tuneflix.`;
+    const title = `${track.name} by ${track.artists.map((a: { name: string }) => a.name).join(", ")} | Tunebay`;
+    const description = `Listen to "${track.name}" by ${track.artists.map((a: { name: string }) => a.name).join(", ")}. View album details, lyrics, YouTube video, and more on Tunebay.`;
     const image = track.album?.images?.[0]?.url;
     const url = `${baseUrl}/music/${encodeURIComponent(artist)}/song/${encodeURIComponent(song)}`;
     return {
@@ -31,7 +31,7 @@ export async function generateMetadata(props: any,): Promise<Metadata> {
         description,
         url,
         type: "music.song",
-        siteName: "Tuneflix",
+        siteName: "Tunebay",
         images: [
           {
             url: image,
@@ -61,14 +61,14 @@ export async function generateMetadata(props: any,): Promise<Metadata> {
  
   if (!res.ok) {
     return {
-      title: "Song Not Found | Tuneflix",
+      title: "Song Not Found | Tunebay",
       description: "Sorry, this song could not be found.",
     };
   }
   const track = await res.json();
 
-  const title = `${track.name} by ${track.artists.map((a: { name: string }) => a.name).join(", ")} | Tuneflix`;
-  const description = `Listen to "${track.name}" by ${track.artists.map((a: { name: string }) => a.name).join(", ")}. View album details, lyrics, YouTube video, and more on Tuneflix.`;
+  const title = `${track.name} by ${track.artists.map((a: { name: string }) => a.name).join(", ")} | Tunebay`;
+  const description = `Listen to "${track.name}" by ${track.artists.map((a: { name: string }) => a.name).join(", ")}. View album details, lyrics, YouTube video, and more on Tunebay.`;
   const image = track.album?.images?.[0]?.url;
   const url = `${baseUrl}/music/${encodeURIComponent(artist)}/song/${encodeURIComponent(song)}`;
 
@@ -80,7 +80,7 @@ export async function generateMetadata(props: any,): Promise<Metadata> {
       description,
       url,
       type: "music.song",
-      siteName: "Tuneflix",
+      siteName: "Tunebay",
       images: [
         {
           url: image,

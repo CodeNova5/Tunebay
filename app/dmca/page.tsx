@@ -7,7 +7,7 @@ const DMCAPolicy = () => {
       <h1 className="text-4xl font-bold text-center text-blue-400">DMCA Policy</h1>
 
       <p>
-        Tuneflix respects the intellectual property rights of others and expects users of our website to do the same. In accordance with the Digital Millennium Copyright Act (DMCA), we will respond promptly to claims of copyright infringement committed using the Tuneflix service and/or the Tuneflix website.
+        Tunebay respects the intellectual property rights of others and expects users of our website to do the same. In accordance with the Digital Millennium Copyright Act (DMCA), we will respond promptly to claims of copyright infringement committed using the Tunebay service and/or the Tunebay website.
       </p>
 
       <h2 className="text-2xl font-semibold text-blue-300">Filing a DMCA Complaint</h2>
@@ -46,7 +46,7 @@ const DMCAPolicy = () => {
 
       <h2 className="text-2xl font-semibold text-blue-300">Repeat Infringers</h2>
       <p>
-        Tuneflix reserves the right to terminate the accounts of users who are repeat infringers of intellectual property rights.
+        Tunebay reserves the right to terminate the accounts of users who are repeat infringers of intellectual property rights.
       </p>
 
       <h2 className="text-2xl font-semibold text-blue-300">Changes to This Policy</h2>

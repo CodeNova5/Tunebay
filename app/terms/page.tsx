@@ -8,7 +8,7 @@ export default function TermsOfService() {
       <section>
         <h2 className={styles.sectionTitle}>1. Introduction</h2>
         <p className={styles.paragraph}>
-          Welcome to Tuneflix! By accessing or using our website, you agree to be bound by these Terms of Service.
+          Welcome to Tunebay! By accessing or using our website, you agree to be bound by these Terms of Service.
         </p>
       </section>
 
@@ -50,7 +50,7 @@ export default function TermsOfService() {
       <section>
         <h2 className={styles.sectionTitle}>7. Disclaimer</h2>
         <p className={styles.paragraph}>
-          Tuneflix may feature or reference copyrighted material such as music, video thumbnails, images, or descriptions for informational, educational, or promotional purposes. We do not claim ownership of any such content. All rights to the original content belong to their respective creators, artists, copyright holders, or platforms. Use of this material is not intended to infringe on any rights but to acknowledge and promote the work of its rightful owners.
+          Tunebay may feature or reference copyrighted material such as music, video thumbnails, images, or descriptions for informational, educational, or promotional purposes. We do not claim ownership of any such content. All rights to the original content belong to their respective creators, artists, copyright holders, or platforms. Use of this material is not intended to infringe on any rights but to acknowledge and promote the work of its rightful owners.
         </p>
       </section>
       <section>

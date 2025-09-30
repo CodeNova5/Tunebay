@@ -17,7 +17,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
     console.log("✅ MongoDB cache hit for", cacheKey);
     const playlistDetails = mongoCache.data;
     const title = `${playlistDetails.name}`;
-    const description = `Explore the playlist "${playlistDetails.name}". Listen to tracks, view details, and more on Tuneflix.`;
+    const description = `Explore the playlist "${playlistDetails.name}". Listen to tracks, view details, and more on Tunebay.`;
     const image = playlistDetails.image;
     const url = `${baseUrl}/music/playlist/${encodeURIComponent(playlistId)}/type/${encodeURIComponent(playlistType)}`;
 
@@ -29,7 +29,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
         description,
         url,
         type: "music.playlist",
-        siteName: "Tuneflix",
+        siteName: "Tunebay",
         images: [
           {
             url: image,
@@ -55,14 +55,14 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const res = await fetch(apiUrl, { cache: "no-store" });
   if (!res.ok) {
     return {
-      title: "Playlist Not Found | Tuneflix",
+      title: "Playlist Not Found | Tunebay",
       description: "Sorry, this playlist could not be found.",
     };
   }
   const data = await res.json();
 
-  const title = `${data.playlistDetails?.name || "Playlist"} | Tuneflix`;
-  const description = `Listen to the playlist "${data.playlistDetails?.name || ""}" on Tuneflix.`;
+  const title = `${data.playlistDetails?.name || "Playlist"} | Tunebay`;
+  const description = `Listen to the playlist "${data.playlistDetails?.name || ""}" on Tunebay.`;
   const image = data.playlistDetails?.image || "/placeholder.jpg";
   const url = `${baseUrl}/music/playlist/${encodeURIComponent(playlistId)}/type/${encodeURIComponent(playlistType)}`;
 
@@ -74,7 +74,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
       description,
       url,
       type: "music.playlist",
-      siteName: "Tuneflix",
+      siteName: "Tunebay",
       images: [
         {
           url: image,

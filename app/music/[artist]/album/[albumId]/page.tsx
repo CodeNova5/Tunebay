@@ -18,7 +18,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
     console.log("✅ MongoDB cache hit for", cacheKey);
     const albumDetails = mongoCache.data;
     const title = `${albumDetails.name}`;
-    const description = `Explore the album "${albumDetails.name}" featuring tracks, artist info, and more on Tuneflix.`;
+    const description = `Explore the album "${albumDetails.name}" featuring tracks, artist info, and more on Tunebay.`;
     const image = albumDetails.image;
     const url = `${baseUrl}/music/album/${encodeURIComponent(albumId)}`;
     
@@ -30,7 +30,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
         description,
         url,
         type: "music.album", // ✅ Correct Open Graph type
-        siteName: "Tuneflix",
+        siteName: "Tunebay",
         images: [
           {
             url: image,
@@ -56,14 +56,14 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const res = await fetch(apiUrl, { cache: "no-store" });
   if (!res.ok) {
     return {
-      title: "Album Not Found | Tuneflix",
+      title: "Album Not Found | Tunebay",
       description: "Sorry, this album could not be found.",
     };
   }
 
   const albumDetails = await res.json();
   const title = `${albumDetails.name}`;
-  const description = `Explore the album "${albumDetails.name}" featuring tracks, artist info, and more on Tuneflix.`;
+  const description = `Explore the album "${albumDetails.name}" featuring tracks, artist info, and more on Tunebay.`;
   const image = albumDetails.image;
   const url = `${baseUrl}/album/${encodeURIComponent(albumId)}`;
 
@@ -75,7 +75,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
       description,
       url,
       type: "music.album", // ✅ Correct Open Graph type
-      siteName: "Tuneflix",
+      siteName: "Tunebay",
       images: [
         {
           url: image,

@@ -17,7 +17,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
     console.log("✅ MongoDB cache hit for", cacheKey);
     const artistDetails = mongoCache.data;
     const title = `${artistDetails.name}`;
-    const description = `Check out this artist "${artistDetails.name}". View songs, albums, and more on Tuneflix.`;
+    const description = `Check out this artist "${artistDetails.name}". View songs, albums, and more on Tunebay.`;
     const image = artistDetails.image;
     const url = `${baseUrl}/music/${encodeURIComponent(artist)}`;
     
@@ -29,7 +29,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
         description,
         url,
         type: "profile",
-        siteName: "Tuneflix",
+        siteName: "Tunebay",
         images: [
           {
             url: image,
@@ -55,14 +55,14 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const res = await fetch(apiUrl, { cache: "no-store" });
   if (!res.ok) {
     return {
-      title: "Song Not Found | Tuneflix",
+      title: "Song Not Found | Tunebay",
       description: "Sorry, this song could not be found.",
     };
   }
 
   const artistDetails = await res.json();
   const title = `${artistDetails.name}`;
-  const description = `Check out this artist "${artistDetails.name}". View songs, albums, and more on Tuneflix.`;
+  const description = `Check out this artist "${artistDetails.name}". View songs, albums, and more on Tunebay.`;
   const image = artistDetails.image;
   const url = `${baseUrl}/music/${encodeURIComponent(artist)}`;
 
@@ -74,7 +74,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
       description,
       url,
       type: "profile",
-      siteName: "Tuneflix",
+      siteName: "Tunebay",
       images: [
         {
           url: image,
