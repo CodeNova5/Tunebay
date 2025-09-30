@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: 'https://tuneflix.com/images/og-image.jpg',
+        height: 600,
+        width: 1000,
+
         alt: 'Tunebay logo',
       },
     ],

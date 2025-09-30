@@ -283,7 +283,6 @@ export default function SongPage() {
         try {
             const res = await fetch(githubRawUrl, { method: "HEAD" });
             if (res.ok) {
-                
                 return githubRawUrl;
             }
             return null;

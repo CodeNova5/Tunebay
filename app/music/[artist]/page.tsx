@@ -11,7 +11,7 @@ export async function generateMetadata(props: any): Promise<Metadata> {
 
   // Try MOngoDB cache
   await connectDB();
-  const cacheKey = `artist-${artist}`;
+  const cacheKey = `artist-${decodeURIComponent(artist)}`;
   const mongoCache = await SongCache.findOne({ cacheKey });
   if (mongoCache) {
     console.log("✅ MongoDB cache hit for", cacheKey);
