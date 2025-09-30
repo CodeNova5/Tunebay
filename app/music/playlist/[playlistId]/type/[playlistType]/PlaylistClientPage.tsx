@@ -88,7 +88,7 @@ export default function PlaylistClientPage() {
         artist={undefined}
       />
       <h2 className="text-2xl font-bold mb-4">Tracks</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {tracks.map((track) => (
           <Link
             key={track.id}
@@ -100,7 +100,7 @@ export default function PlaylistClientPage() {
               <img
                 src={track.album.cover_medium}
                 alt={track.title}
-                className="w-full h-48 object-cover rounded"
+                className="w-48 h-48 object-cover rounded"
               />
               <h2 className="font-semibold mt-2">{track.title}</h2>
               <p className="text-gray-400">{track.artist.name}</p>
