@@ -88,39 +88,36 @@ export default function PlaylistClientPage() {
         artist={undefined}
       />
       <h2 className="text-2xl font-bold mb-4">Tracks</h2>
-
-  
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4
-">
+      <div className="space-y-3">
         {tracks.map((track) => (
           <Link
             key={track.id}
-            href={`/music/${encodeURIComponent(track.artist.name)}/song/${encodeURIComponent(
-              track.title
-            )}`}
+            href={`/music/${encodeURIComponent(track.artist.name)}/song/${encodeURIComponent(track.title)}`}
           >
-            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer flex flex-col items-center w-48">
+            <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
               <img
                 src={track.album.cover_medium}
                 alt={track.title}
-                className="w-48 h-48 object-cover rounded"
+                className="w-14 h-14 object-cover rounded"
               />
-              <h2
-                className="font-semibold mt-2 text-center truncate w-full"
-                title={track.title}
-              >
-                {track.title}
-              </h2>
-              <p
-                className="text-gray-400 text-sm truncate w-full text-center"
-                title={track.artist.name}
-              >
-                {track.artist.name}
-              </p>
+              <div className="flex-1 min-w-0">
+                <h2
+                  className="font-semibold text-white truncate"
+                  title={track.title}
+                >
+                  {track.artist.name} - {track.title}
+                </h2>
+                <p className="text-gray-400 text-sm truncate" title={track.artist.name}>
+                  {track.artist.name}
+                </p>
+              </div>
+              {/* optional menu dots */}
+              <button className="text-gray-400 hover:text-white">⋮</button>
             </div>
           </Link>
         ))}
       </div>
+
 
       <Footer />
     </div>
