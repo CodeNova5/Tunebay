@@ -15,9 +15,9 @@ export const metadata: Metadata = {
     siteName: 'Tunebay',
     images: [
       {
-        url: 'https://tunebay.vercel.app/images/og-image.jpg',
-        height: 600,
-        width: 1000,
+        url: 'https://tunebay.vercel.app/images/og-image.png',
+        width: 1200,
+        height: 630,
 
         alt: 'Tunebay logo',
       },
