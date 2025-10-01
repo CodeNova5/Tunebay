@@ -20,8 +20,6 @@ import { SongCache } from "../../models/songCache.js";
 import { ArtistAlbumsCache } from "../../models/songCache.js";
 import { ArtistSongsCache } from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
-// ocktokit is ESM only, so dynamic import
-import { Octokit } from "@octokit/rest";
 let artistTokenExpiresAt = 0;
 
 async function getSpotifyAccessToken() {
@@ -274,7 +272,6 @@ export default async function handler(req, res) {
         const cacheKey = `song:${decodedArtistName}:${decodedSongName}`;
         let songData = null;
 
-
         // 🟡 1. Try MongoDB cache
         await connectDB();
         const mongoCache = await SongCache.findOne({ cacheKey });
@@ -283,7 +280,6 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
           return res.status(200).json(mongoCache.data);
         }
-
 
         // 🔵 2. Fetch from Spotify if not cached anywhere
         const apiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
@@ -318,22 +314,14 @@ export default async function handler(req, res) {
           duration_ms: track.duration_ms,
         };
 
-        // 🔄 3. Save to Redis 1 month (if available)
-        try {
-          await redis.set(cacheKey, JSON.stringify(songData), { ex: 2592000 });
-        } catch (redisErr) {
-          console.warn("⚠️ Failed to write to Redis:", redisErr.message);
-        }
-
-        // 🔄 4. Save new cache
+        // 🔄 3. Save new cache
         await SongCache.updateOne(
           { cacheKey },
           { $set: { data: songData, createdAt: new Date() } },
           { upsert: true }
         );
 
-
-        // ✅ 5. Respond
+        // ✅ 4. Respond
         res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
         return res.status(200).json(songData);
 
@@ -345,6 +333,7 @@ export default async function handler(req, res) {
 
 
     else if (type === "clientId") {
+      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate");
       res.status(200).json({ clientId: process.env.GOOGLE_CLIENT_ID });
     }
 
@@ -356,14 +345,6 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `youtube:${decodedArtistName}:${decodedSongName}`;
-
-        //  Try Redis cache first
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("cache hit for", cacheKey);
-          res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
-          return res.status(200).json(cached);
-        }
 
         // Try mongodb cache next
         await connectDB();
@@ -393,8 +374,7 @@ export default async function handler(req, res) {
         const videoId = data.items[0].id.videoId;
         const videoData = { videoId };
 
-        // 3️⃣ Save result in Redis for 3months + MongoDB
-        await redis.set(cacheKey, videoData, { ex: 7776000 });
+        // 3️⃣ Save to MongoDB
         await SongCache.updateOne(
           { cacheKey },
           { $set: { data: videoData, createdAt: new Date() } },

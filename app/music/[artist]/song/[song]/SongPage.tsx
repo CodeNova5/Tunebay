@@ -12,6 +12,7 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
+import { set } from "mongoose";
 
 declare global {
     interface Window {
@@ -608,7 +609,8 @@ export default function SongPage() {
                             })
                             .catch(console.error);
                     }
-                    setShowModal(true);
+                    // wait a second and then show the ad modal
+                    setTimeout(() => setShowModal(true), 2000);
                 }}
                 style={{
                     display: "inline-block",

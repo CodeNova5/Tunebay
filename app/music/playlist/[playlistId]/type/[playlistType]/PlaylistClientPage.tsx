@@ -69,45 +69,35 @@ export default function PlaylistClientPage() {
   }
 
   return (
-    <div className="p-4 bg-#111 text-white min-h-screen mt-20">
-      <Header />
-      {playlistDetails && (
-        <div className="mb-8 text-center">
-          <img
-            src={playlistDetails.image}
-            alt={playlistDetails.name}
-            className="w-32 h-32 mx-auto rounded-full object-cover"
-          />
-          <h1 className="text-3xl font-bold mt-4">{playlistDetails.name}</h1>
-        </div>
-      )}
-      <CommentShareModule
-        playlist={{ name: playlistDetails?.name, image: playlistDetails?.image }}
-        track={undefined}
-        album={undefined}
-        artist={undefined}
-      />
-      <h2 className="text-2xl font-bold mb-4">Tracks</h2>
-      <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {tracks.map((track) => (
-          <Link
-            key={track.id}
-            href={`/music/${encodeURIComponent(track.artist.name)}/song/${encodeURIComponent(
-              track.title
-            )}`}
-          >
-            <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer">
-              <img
-                src={track.album.cover_medium}
-                alt={track.title}
-                className="w-48 h-48 object-cover rounded"
-              />
-              <h2 className="font-semibold mt-2">{track.title}</h2>
-              <p className="text-gray-400">{track.artist.name}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {tracks.map((track) => (
+        <Link
+          key={track.id}
+          href={`/music/${encodeURIComponent(track.artist.name)}/song/${encodeURIComponent(
+            track.title
+          )}`}
+        >
+          <div className="border rounded-lg p-2 shadow-md bg-gray-800 cursor-pointer flex flex-col items-center w-48">
+            <img
+              src={track.album.cover_medium}
+              alt={track.title}
+              className="w-48 h-48 object-cover rounded"
+            />
+            <h2
+              className="font-semibold mt-2 text-center truncate w-full"
+              title={track.title}
+            >
+              {track.title}
+            </h2>
+            <p
+              className="text-gray-400 text-sm truncate w-full text-center"
+              title={track.artist.name}
+            >
+              {track.artist.name}
+            </p>
+          </div>
+        </Link>
+      ))}
       <Footer />
     </div>
   );
