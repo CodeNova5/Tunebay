@@ -94,7 +94,7 @@ export default function PlaylistClientPage() {
             key={track.id}
             href={`/music/${encodeURIComponent(track.artist.name)}/song/${encodeURIComponent(track.title)}`}
           >
-            <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
+            <div className="flex items-center gap-3 p-2 mb-4 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
               <img
                 src={track.album.cover_medium}
                 alt={track.title}
