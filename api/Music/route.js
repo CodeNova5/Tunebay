@@ -397,19 +397,9 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `lyricsVideo:${decodedArtistName}:${decodedSongName}`;
-
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=31536000, immutable"
-          );
-          return res.status(200).json(cached);
-        }
-        // Try mongodb cache next
         await connectDB();
+
+        // 🔹 Try MongoDB cache
         const mongoCache = await SongCache.findOne({ cacheKey });
         if (mongoCache) {
           console.log("MongoDB cache hit for", cacheKey);
@@ -417,31 +407,51 @@ export default async function handler(req, res) {
           return res.status(200).json(mongoCache.data);
         }
 
-        // 3️⃣ Fetch from YouTube if not cached
+        // 🔹 Fetch from YouTube
         const query = `${decodedArtistName} ${decodedSongName} lyrics video`;
-        const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1`;
+        const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=5`;
 
-        const { response, data } = await fetchWithYouTubeAPI(apiUrl, () => YOUTUBE_API_KEY, () => YOUTUBE_API_KEY2);
+        const { response, data } = await fetchWithYouTubeAPI(
+          apiUrl,
+          () => YOUTUBE_API_KEY,
+          () => YOUTUBE_API_KEY2
+        );
 
         if (!response.ok) throw new Error("Failed to fetch YouTube video");
-
-
         if (!data.items || data.items.length === 0) {
           return res.status(404).json({ error: "No lyrics video found for this song" });
         }
 
-        const videoId = data.items[0].id.videoId;
+        // 🔹 Filter the results more strictly
+        const normalizedSong = decodedSongName.toLowerCase().replace(/[^\w\s]/g, "");
+        const normalizedArtist = decodedArtistName.toLowerCase().replace(/[^\w\s]/g, "");
+
+        const matched = data.items.find(item => {
+          const title = item.snippet.title.toLowerCase().replace(/[^\w\s]/g, "");
+          const channel = item.snippet.channelTitle.toLowerCase();
+          return (
+            title.includes(normalizedSong) &&
+            (title.includes(normalizedArtist) || channel.includes(normalizedArtist))
+          );
+        });
+
+        if (!matched) {
+          return res.status(404).json({ error: "No accurate lyrics video match found" });
+        }
+
+        const videoId = matched.id.videoId;
         const videoData = { videoId };
-        // 4️⃣ Save to Redis  for 1 Month
-        await redis.set(cacheKey, videoData, { ex: 2592000 });
-        // 5️⃣ Save to MongoDB
+
+        // 🔹 Cache result
         await SongCache.updateOne(
           { cacheKey },
           { $set: { data: videoData, createdAt: new Date() } },
           { upsert: true }
         );
-        res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+
+        res.setHeader("Cache-Control", "max-age=31536000, immutable");
         return res.status(200).json({ videoId });
+
       } catch (err) {
         console.error("YouTube API Error:", err);
         return res.status(500).json({ error: "Failed to fetch YouTube lyrics video" });
@@ -498,7 +508,7 @@ export default async function handler(req, res) {
       }
     }
 
-  
+
     else if (type === "lyrics") {
       if (!artistName || !songName) {
         return res.status(400).json({ error: "Missing artist name or song name" });
@@ -1180,7 +1190,7 @@ export default async function handler(req, res) {
           { $set: { data: nigerianSongsWithImages, createdAt: new Date() } },
           { upsert: true }
         );
-     
+
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(nigerianSongsWithImages);
       } catch (err) {
