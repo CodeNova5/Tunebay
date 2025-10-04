@@ -24,19 +24,21 @@ const Header = () => {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  // Only fetch on Enter key
+  // Fetch results when type pauses for 300ms
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") {
-      e.preventDefault();
+      if (typingTimeout) clearTimeout(typingTimeout);
       fetchSearchResults(search);
+    } else {
+      if (typingTimeout) clearTimeout(typingTimeout);
+      setTypingTimeout(setTimeout(() => fetchSearchResults(search), 300));
     }
   };
-
-
-  // Only update search state, don't fetch on change
+  // Update search state on input change
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
-    setResults([]); // Clear results while typing
+    if (typingTimeout) clearTimeout(typingTimeout);
+    setTypingTimeout(setTimeout(() => fetchSearchResults(e.target.value), 300));
   };
 
   const fetchSearchResults = async (query) => {
