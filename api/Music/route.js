@@ -58,7 +58,6 @@ async function getLyricsFromGenius(artist, song) {
       return lyrics;
     }
 
-
     // Step 1: Search Genius for the song
     const searchUrl = `https://genius.com/api/search/song?q=${encodeURIComponent(artist + " " + song)}`;
     const searchRes = await axios.get(searchUrl);
