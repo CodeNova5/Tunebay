@@ -794,7 +794,7 @@ export default async function handler(req, res) {
         // Fetch related artists from Last.fm
         const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
           decodedArtistName
-        )}&limit=20format=json&api_key=${LAST_FM_API_KEY2}`;
+        )}&limit=20&format=json&api_key=${LAST_FM_API_KEY2}`;
 
         const lastFmResponse = await fetch(lastFmApiUrl);
 
