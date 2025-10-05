@@ -794,7 +794,7 @@ export default async function handler(req, res) {
         // Fetch related artists from Last.fm
         const lastFmApiUrl = `http://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(
           decodedArtistName
-        )}&limit=10&format=json&api_key=${LAST_FM_API_KEY2}`;
+        )}&limit=20format=json&api_key=${LAST_FM_API_KEY2}`;
 
         const lastFmResponse = await fetch(lastFmApiUrl);
 
@@ -809,15 +809,37 @@ export default async function handler(req, res) {
         }
 
         // Map Last.fm response to a cleaner format
+        // Make sure no two artist like The weekend & ariana Grande or Jessie J ft. Ariana Grande & Nicki Minaj
+
         const relatedArtistsRaw = lastFmData.similarartists.artist.map((artist) => ({
-          name: artist.name,
+          name: artist.name.trim(),
           url: artist.url || null,
         }));
+
+        // Filter out artists that mention multiple known artists or duplicate mentions
+        const cleanedRelatedArtists = relatedArtistsRaw.filter((artist, index, self) => {
+          const artistName = artist.name.toLowerCase();
+
+          // Skip if this artist name already exists (case-insensitive)
+          const alreadyExists = self.findIndex(a => a.name.toLowerCase() === artistName) !== index;
+          if (alreadyExists) return false;
+
+          // Skip if name contains "&", "ft", or "," (means collab or group)
+          if (artistName.includes(" ft") || artistName.includes("&") || artistName.includes(",")) {
+            // Check if any existing artist name is mentioned within this collab string
+            return !self.some(a =>
+              artistName !== a.name.toLowerCase() &&
+              artistName.includes(a.name.toLowerCase())
+            );
+          }
+
+          return true;
+        });
 
         // Fetch Spotify image for each artist
         const accessToken = await getAlbumAccessToken();
         const relatedArtists = await Promise.all(
-          relatedArtistsRaw.map(async (artist) => {
+          cleanedRelatedArtists.map(async (artist) => {
             try {
               const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
                 artist.name
