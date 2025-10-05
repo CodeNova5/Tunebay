@@ -180,7 +180,6 @@ const Header = () => {
           <input
             placeholder="Search..."
             value={search}
-            onClick={redirect}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
             style={{
