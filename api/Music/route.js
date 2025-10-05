@@ -809,7 +809,7 @@ export default async function handler(req, res) {
         }
 
         // Map Last.fm response to a cleaner format
-        // Make sure no two artist like The weekend & ariana Grande or Jessie J ft. Ariana Grande & Nicki Minaj
+        // Make sure no two artist like The weekend & ariana Grande or Jessie J ft. Ariana Grande & Nicki Minaj...
 
         const relatedArtistsRaw = lastFmData.similarartists.artist.map((artist) => ({
           name: artist.name.trim(),
