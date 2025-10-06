@@ -816,26 +816,29 @@ export default async function handler(req, res) {
           url: artist.url || null,
         }));
 
-        // Filter out artists that mention multiple known artists or duplicate mentions
+        // Filter and clean related artists
         const cleanedRelatedArtists = relatedArtistsRaw.filter((artist, index, self) => {
-          const artistName = artist.name.toLowerCase();
+          const name = artist.name.toLowerCase();
 
-          // Skip if this artist name already exists (case-insensitive)
-          const alreadyExists = self.findIndex(a => a.name.toLowerCase() === artistName) !== index;
+          // Skip duplicates (case insensitive)
+          const alreadyExists = self.findIndex(a => a.name.toLowerCase() === name) !== index;
           if (alreadyExists) return false;
 
-          // Skip if name contains "&", "ft", or "," (means collab or group)
-          if (artistName.includes(" ft") || artistName.includes("&") || artistName.includes(",")) {
-            // Check if any existing artist name is mentioned within this collab string
-            return !self.some(a =>
-              artistName !== a.name.toLowerCase() &&
-              artistName.includes(a.name.toLowerCase())
-            );
+          // Skip if name looks like a collab or contains multiple artists
+          const collabIndicators = [" ft", "feat", "&", " with ", ",", " x ", " and "];
+          if (collabIndicators.some(ind => name.includes(ind))) {
+            return false;
+          }
+
+          // Skip if name looks like a generic or weird term (optional)
+          if (name.length < 2 || name.match(/various|soundtrack|mix|cover/)) {
+            return false;
           }
 
           return true;
         });
-        
+
+
         // Fetch Spotify image for each artist
         const accessToken = await getAlbumAccessToken();
         const relatedArtists = await Promise.all(
