@@ -835,7 +835,7 @@ export default async function handler(req, res) {
 
           return true;
         });
-
+        
         // Fetch Spotify image for each artist
         const accessToken = await getAlbumAccessToken();
         const relatedArtists = await Promise.all(
