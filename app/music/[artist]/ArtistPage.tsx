@@ -73,22 +73,30 @@ export default function ArtistPage() {
     }
   }, [artist]);
 
-  async function fetchArtistAlbums() {
-    // Fetch artist albums
-    const albumsResponse = await fetch(
-      `/api/Music/route?type=artistAlbums&artistId=${encodeURIComponent(artistDetails.id)}`
-    );
-    if (!albumsResponse.ok) {
-      const errorData = await albumsResponse.json();
-      setError(errorData.error || "Failed to fetch artist albums");
-      return;
+  React.useEffect(() => {
+    if (!artistDetails?.id) return;
+
+    async function fetchArtistAlbums() {
+      try {
+        const albumsResponse = await fetch(
+          `/api/Music/route?type=artistAlbums&artistId=${encodeURIComponent(artistDetails.id)}`
+        );
+        if (!albumsResponse.ok) {
+          const errorData = await albumsResponse.json();
+          setError(errorData.error || "Failed to fetch artist albums");
+          return;
+        }
+        const albumsData = await albumsResponse.json();
+        setArtistAlbums(albumsData);
+      } catch (err) {
+        console.error("Error fetching artist albums:", err);
+        setError("Failed to fetch artist albums");
+      }
     }
-    const albumsData = await albumsResponse.json();
-    setArtistAlbums(albumsData);
-  }
-  if (artistDetails) {
+
     fetchArtistAlbums();
-  }
+  }, [artistDetails?.id]);
+
 
   if (!artistDetails) {
     return <h1>Loading...</h1>;
