@@ -96,7 +96,7 @@ export default function ArtistPage() {
   }
 
   fetchArtistAlbums();
-}, [artist]);
+}, [artistDetails?.id]);
 
 
   if (!artistDetails) {

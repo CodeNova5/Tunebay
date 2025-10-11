@@ -931,7 +931,7 @@ export default async function handler(req, res) {
           { $set: { data: formattedAlbums, createdAt: new Date() } },
           { upsert: true }
         );
-
+        console.log("Fetched albums from Spotify for artistId:", artistId);
         res.setHeader("Cache-Control", "s-maxage=7200, stale-while-revalidate");
         return res.status(200).json(albumsData.items.map((album) => ({
           name: album.name,
