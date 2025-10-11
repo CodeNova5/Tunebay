@@ -76,11 +76,7 @@ export default function ArtistPage() {
   React.useEffect(() => {
   if (!artistDetails?.id || !artist) return;
 
-  let isFetched = false;
-
   async function fetchArtistAlbums() {
-    if (isFetched) return;
-    isFetched = true;
 
     try {
       const albumsResponse = await fetch(
