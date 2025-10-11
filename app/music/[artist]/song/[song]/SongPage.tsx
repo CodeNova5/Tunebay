@@ -137,6 +137,10 @@ export default function SongPage() {
             data,
             provider: "google"
         }));
+
+        setTimeout(() => {
+            router.refresh();
+        }, 1000);
     };
 
 
