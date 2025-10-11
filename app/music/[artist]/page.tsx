@@ -66,6 +66,13 @@ export async function generateMetadata(props: any): Promise<Metadata> {
   const image = artistDetails.image;
   const url = `${baseUrl}/music/${encodeURIComponent(artist)}`;
 
+  // store in MongoDB cache for next time
+  await SongCache.findOneAndUpdate(
+    { cacheKey },
+    { data: artistDetails, createdAt: new Date() },
+    { upsert: true, new: true }
+  );
+
   return {
     title,
     description,
