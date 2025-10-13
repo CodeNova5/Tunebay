@@ -1033,8 +1033,9 @@ export default async function handler(req, res) {
         }
 
         // 2️⃣ Billboard API request using axios (like ok.js)
-        // Get today's date in YYYY-MM-DD format
+        // Use a date two weeks before today in YYYY-MM-DD format
         const today = new Date();
+        today.setDate(today.getDate() - 14);
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
