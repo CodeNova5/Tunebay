@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import HomePage from "./HomePage"; // client component
-import Script from "next/script";
 
 export const metadata: Metadata = {
   title: 'Tunebay || Web Music Player',
@@ -29,11 +28,6 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <>
-      <Script
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4306931152368412"
-        strategy="afterInteractive"
-        crossOrigin="anonymous"
-      />
       <HomePage />
     </>
   );

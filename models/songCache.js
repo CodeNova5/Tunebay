@@ -21,9 +21,16 @@ const ArtistSongsCacheSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now, expires: 60 * 60 * 24 * 7 } // 7 days
 });
 
+const topSongsCacheSchema = new mongoose.Schema({
+  cacheKey: { type: String, required: true, unique: true },
+  data: { type: Object, required: true },
+  createdAt: { type: Date, default: Date.now, expires: 60 * 60 * 24 * 7 } // 7 days
+});
+
+
 // Prevent model overwrite issues in dev
 const SongCache = mongoose.models.SongCache || mongoose.model("SongCache", SongCacheSchema);
 const ArtistAlbumsCache = mongoose.models.ArtistAlbumsCache || mongoose.model("ArtistAlbumsCache", ArtistAlbumsCacheSchema);
 const ArtistSongsCache = mongoose.models.ArtistSongsCache || mongoose.model("ArtistSongsCache", ArtistSongsCacheSchema);
-
-export { SongCache, ArtistAlbumsCache, ArtistSongsCache };
+const TopSongsCache = mongoose.models.TopSongsCache || mongoose.model("TopSongsCache", topSongsCacheSchema);
+export { SongCache, ArtistAlbumsCache, ArtistSongsCache, TopSongsCache };

@@ -19,6 +19,7 @@ import axios from "axios";
 import { SongCache } from "../../models/songCache.js";
 import { ArtistAlbumsCache } from "../../models/songCache.js";
 import { ArtistSongsCache } from "../../models/songCache.js";
+import { TopSongsCache } from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
 let artistTokenExpiresAt = 0;
 
@@ -1022,58 +1023,42 @@ export default async function handler(req, res) {
       try {
         const cacheKey = `topSongs`;
 
-        // 🔹 Check Redis cache first
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
+        // 1️⃣ Try mongo cache first
+        await connectDB();
+        const mongoCache = await TopSongsCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
           res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
-          return res.status(200).json(cached);
+          return res.status(200).json(mongoCache.data);
         }
 
-        const url = `https://ws.audioscrobbler.com/2.0/?method=chart.gettoptracks`;
-        const { data } = await fetchWithLastFmKeys(
-          url,
-          () => LAST_FM_API_KEY,
-          () => LAST_FM_API_KEY2
+        const options = {
+          method: "GET",
+          headers: {
+            "x-rapidapi-key": process.env.RAPIDAPI_KEY3,
+            "x-rapidapi-host": "billboard3.p.rapidapi.com",
+          },
+        };
+
+        const response = await fetch("https://billboard3.p.rapidapi.com/hot-100", options);
+        const data = await response.json();
+
+        const topSongs = data.chart.map((song) => ({
+          title: song.title,
+          artist: song.artist,
+          rank: song.rank,
+          image: song.image || "/placeholder.jpg",
+        }));
+      
+        // Save to mongo
+        await TopSongsCache.updateOne(
+          { cacheKey },
+          { $set: { data: topSongs, createdAt: new Date() } },
+          { upsert: true }
         );
-
-        const accessToken = await getArtistAccessToken();
-
-        const chartItems = await Promise.all(
-          data.tracks.track.map(async (track) => {
-            const title = track.name;
-            const artist = track.artist.name;
-
-            try {
-              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-                `${artist} ${title}`
-              )}&type=track&limit=1`;
-
-              const spotifyResponse = await fetch(spotifyApiUrl, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-
-              if (!spotifyResponse.ok) {
-                throw new Error(`Failed to fetch Spotify data for ${title} by ${artist}`);
-              }
-
-              const spotifyData = await spotifyResponse.json();
-              const image =
-                spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
-
-              return { title, artist, image };
-            } catch (err) {
-              console.error(`Spotify API Error for track ${title} by ${artist}:`, err);
-              return { title, artist, image: "/placeholder.jpg" };
-            }
-          })
-        );
-
-        // 🔹 Cache the whole array, not per song
-        await redis.set(cacheKey, JSON.stringify(chartItems), { ex: 604800 });
 
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
-        return res.status(200).json(chartItems);
+        return res.status(200).json(topSongs);
       } catch (error) {
         console.error("Error fetching chart data:", error.message);
         return res.status(500).json({ error: "Failed to fetch top songs" });

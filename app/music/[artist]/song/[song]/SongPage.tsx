@@ -51,6 +51,7 @@ export default function SongPage() {
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
     const [showModal, setShowModal] = React.useState(false);
+    const [shouldRefresh, setShouldRefresh] = React.useState(false);
 
 
 
@@ -137,11 +138,17 @@ export default function SongPage() {
             data,
             provider: "google"
         }));
-
-        setTimeout(() => {
-            router.refresh();
-        }, 1000);
+        setShouldRefresh(true);
+        setUserInfo(data);
     };
+
+    // Refresh the page after userInfo is set
+    React.useEffect(() => {
+        if (shouldRefresh && userInfo) {
+            setShouldRefresh(false);
+            router.refresh();
+        }
+    }, [shouldRefresh, userInfo, router]);
 
 
     // Disable background scroll when modal is open
