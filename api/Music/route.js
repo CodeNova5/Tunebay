@@ -1021,9 +1021,9 @@ export default async function handler(req, res) {
 
     else if (type === "topSongs") {
       try {
-        const cacheKey = `topSongs`;
+        const cacheKey = "topSongs";
 
-        // 1️⃣ Try mongo cache first
+        // 1️⃣ MongoDB cache first
         await connectDB();
         const mongoCache = await TopSongsCache.findOne({ cacheKey });
         if (mongoCache) {
@@ -1032,31 +1032,47 @@ export default async function handler(req, res) {
           return res.status(200).json(mongoCache.data);
         }
 
+        // 2️⃣ Billboard API request
+        const url = "https://billboard2.p.rapidapi.com/billboard_global_200_excl_us";
         const options = {
           method: "GET",
           headers: {
             "x-rapidapi-key": process.env.RAPIDAPI_KEY3,
-            "x-rapidapi-host": "billboard3.p.rapidapi.com",
+            "x-rapidapi-host": "billboard2.p.rapidapi.com",
           },
         };
 
-        const response = await fetch("https://billboard3.p.rapidapi.com/hot-100", options);
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+          throw new Error(`Billboard API error: ${response.status} ${response.statusText}`);
+        }
+
         const data = await response.json();
 
-        const topSongs = data.chart.map((song) => ({
-          title: song.title,
-          artist: song.artist,
-          rank: song.rank,
-          image: song.image || "/placeholder.jpg",
+        // Some APIs return nested chart data — normalize safely
+        const chart = data.chart || data.data || data.results || [];
+        if (!Array.isArray(chart) || chart.length === 0) {
+          console.error("Invalid Billboard API response:", data);
+          return res.status(500).json({ error: "Invalid Billboard API response" });
+        }
+
+        // 3️⃣ Format top songs
+        const topSongs = chart.map((song) => ({
+          rank: song.rank || song.position || 0,
+          title: song.title || song.song || "Unknown Title",
+          artist: song.artist || song.artist_name || "Unknown Artist",
+          image: song.image || song.cover || "/placeholder.jpg",
         }));
-      
-        // Save to mongo
+
+        // 4️⃣ Cache in MongoDB
         await TopSongsCache.updateOne(
           { cacheKey },
           { $set: { data: topSongs, createdAt: new Date() } },
           { upsert: true }
         );
 
+        // 5️⃣ Return response
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(topSongs);
       } catch (error) {
