@@ -1032,23 +1032,27 @@ export default async function handler(req, res) {
           return res.status(200).json(mongoCache.data);
         }
 
-        // 2️⃣ Billboard API request
-        const url = "https://billboard2.p.rapidapi.com/billboard_global_200_excl_us";
+        // 2️⃣ Billboard API request using axios (like ok.js)
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+
         const options = {
-          method: "GET",
+          method: 'GET',
+          url: 'https://billboard2.p.rapidapi.com/billboard_global_200_excl_us',
+          params: { date: todayStr },
           headers: {
-            "x-rapidapi-key": process.env.RAPIDAPI_KEY3,
-            "x-rapidapi-host": "billboard2.p.rapidapi.com",
-          },
+            'x-rapidapi-key': process.env.RAPIDAPI_KEY3,
+            'x-rapidapi-host': 'billboard2.p.rapidapi.com'
+          }
         };
 
-        const response = await fetch(url, options);
+        const response = await axios.request(options);
 
-        if (!response.ok) {
-          throw new Error(`Billboard API error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
+        const data = response.data;
 
         // Some APIs return nested chart data — normalize safely
         const chart = data.chart || data.data || data.results || [];
