@@ -12,7 +12,13 @@ const options = {
 async function fetchData() {
 	try {
 		const response = await axios.request(options);
-		console.log(response.data);
+     const topSongs = response.data.map((song) => ({
+          rank: song.rank || song.position || 0,
+          title: song.title || song.song || "Unknown Title",
+          artist: song.artist || song.artist_name || "Unknown Artist",
+          image: song.image || song.cover || "/placeholder.jpg",
+        }));
+		console.log(topSongs);
 	} catch (error) {
 		console.error(error);
 	}

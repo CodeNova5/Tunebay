@@ -1053,33 +1053,49 @@ export default async function handler(req, res) {
 
         const response = await axios.request(options);
 
-        const data = response.data;
-
-        // Some APIs return nested chart data — normalize safely
-        const chart = data.chart || data.data || data.results || [];
-        if (!Array.isArray(chart) || chart.length === 0) {
-          console.error("Invalid Billboard API response:", data);
-          return res.status(500).json({ error: "Invalid Billboard API response" });
-        }
-
         // 3️⃣ Format top songs
-        const topSongs = chart.map((song) => ({
+        const topSongs = response.data.map((song) => ({
           rank: song.rank || song.position || 0,
           title: song.title || song.song || "Unknown Title",
           artist: song.artist || song.artist_name || "Unknown Artist",
           image: song.image || song.cover || "/placeholder.jpg",
         }));
 
+        // promise all and get images using spotify
+        const accessToken = await getSpotifyAccessToken();
+        const topSongsWithImages = await Promise.all(
+          topSongs.map(async (song) => {
+            try {
+              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+                `${song.artist} ${song.title}`
+              )}&type=track&limit=1`;
+              const spotifyResponse = await fetch(spotifyApiUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+              if (!spotifyResponse.ok) {
+                throw new Error(`Failed to fetch Spotify data for ${song.title} by ${song.artist}`);
+              }
+              const spotifyData = await spotifyResponse.json();
+              const image =
+                spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || song.image || "/placeholder.jpg";
+              return { ...song, image };
+            } catch (err) {
+              console.error(`Spotify API Error for song ${song.title}:`, err);
+              return { ...song, image: song.image || "/placeholder.jpg" };
+            }
+          })
+        );
+
         // 4️⃣ Cache in MongoDB
         await TopSongsCache.updateOne(
           { cacheKey },
-          { $set: { data: topSongs, createdAt: new Date() } },
+          { $set: { data: topSongsWithImages, createdAt: new Date() } },
           { upsert: true }
         );
 
         // 5️⃣ Return response
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
-        return res.status(200).json(topSongs);
+        return res.status(200).json(topSongsWithImages);
       } catch (error) {
         console.error("Error fetching chart data:", error.message);
         return res.status(500).json({ error: "Failed to fetch top songs" });
