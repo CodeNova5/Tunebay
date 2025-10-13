@@ -1045,7 +1045,7 @@ export default async function handler(req, res) {
           url: 'https://billboard2.p.rapidapi.com/billboard_global_200_excl_us',
           params: { date: todayStr },
           headers: {
-            'x-rapidapi-key': process.env.RAPIDAPI_KEY3,
+            'x-rapidapi-key': 'efa960acdemsha3194f4039be00cp19921ajsn62dacf76f6ed',
             'x-rapidapi-host': 'billboard2.p.rapidapi.com'
           }
         };
