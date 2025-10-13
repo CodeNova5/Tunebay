@@ -1076,12 +1076,18 @@ export default async function handler(req, res) {
                 throw new Error(`Failed to fetch Spotify data for ${song.title} by ${song.artist}`);
               }
               const spotifyData = await spotifyResponse.json();
+              // also get song name and artist name from spotify
+              const spotifyTrack = spotifyData.tracks?.items?.[0];
+              if (spotifyTrack) {
+                song.title = spotifyTrack.name || song.title;
+                song.artist = spotifyTrack.artists.map(a => a.name).join(", ") || song.artist;
+              }
               const image =
                 spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || song.image || "/placeholder.jpg";
-              return { ...song, image };
+              return { image, title: song.title, artist: song.artist };
             } catch (err) {
               console.error(`Spotify API Error for song ${song.title}:`, err);
-              return { ...song, image: song.image || "/placeholder.jpg" };
+              return { image: song.image || "/placeholder.jpg" };
             }
           })
         );
