@@ -125,7 +125,9 @@ export default function HomePage() {
                                     {pageSongs.map((song, i) => (
                                         <Link
                                             key={i}
-                                            href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.title)}`}
+                                            href={`/music/${encodeURIComponent(
+                                                Array.isArray(song.artist) ? song.artist[0] : (song.artist?.split(",")[0] || song.artist)
+                                            )}/song/${encodeURIComponent(song.title)}`}
                                         >
                                             <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">
                                                 <img
