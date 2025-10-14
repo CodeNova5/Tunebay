@@ -114,13 +114,13 @@ export default function HomePage() {
 
                 {/* 🔹 Top Songs (kept full size) */}
                 <SectionWrapper title="Top Songs Globally">
-                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 px-2 sm:px-4 scrollbar-hide scroll-smooth">
                         {Array.from({ length: Math.ceil(songs.length / 4) }, (_, pageIndex) => {
                             const pageSongs = songs.slice(pageIndex * 4, pageIndex * 4 + 4);
                             return (
                                 <div
                                     key={pageIndex}
-                                    className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[85vw] sm:w-[360px] md:w-[480px]"
                                 >
                                     {pageSongs.map((song, i) => (
                                         <Link
@@ -154,13 +154,13 @@ export default function HomePage() {
 
                 {/* Top Nigerian Songs*/}
                 <SectionWrapper title="Top Nigerian Songs">
-                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4">
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 px-2 sm:px-4 scrollbar-hide scroll-smooth">
                         {Array.from({ length: Math.ceil(NigerianSongs.length / 4) }, (_, pageIndex) => {
                             const pageSongs = NigerianSongs.slice(pageIndex * 4, pageIndex * 4 + 4);
                             return (
                                 <div
                                     key={pageIndex}
-                                    className="snap-start shrink-0 flex flex-col gap-4 w-[90vw] sm:w-[400px] md:w-[500px]"
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[85vw] sm:w-[360px] md:w-[480px]"
                                 >
                                     {pageSongs.map((song, i) => (
                                         <Link
