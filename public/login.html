@@ -1,151 +1,192 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google and Facebook Login Demo</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script>
-        function handleCredentialResponse(response) {
-            if (response.credential) {
-                const data = parseJwt(response.credential);
-                console.log('Decoded Google JWT:', data);
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZmCULaM1uPv6b+2iQe8qHRWlO4+OZxNKRk2+4U9O6RR3T+CR+5bY5/1H8Y+gXr2D9cw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<title>Click hint animation</title>
+<style>
+  :root{
+    --hint-size: 56px;        /* hand size */
+    --ripple-size: 110px;     /* click ripple size */
+    --gap: 14px;              /* offset from image edge */
+    --duration: 1.6s;         /* full loop */
+    --accent: rgba(29,185,84,0.16); /* ripple color */
+  }
 
-                // Save Google user information in a unified local storage
-                saveUserInfo('google', data);
+  .img-wrap{
+    position: relative;
+    display: inline-block;
+    border-radius: 12px;
+    overflow: hidden;
+    /* add a soft shadow to make it pop */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  }
 
-                // Display Google user info
-                displayGoogleUserInfo(data);
-            } else {
-                console.error("Error: No Google credential received.");
-            }
-        }
+  /* example image (responsive) */
+  .img-wrap img{
+    display: block;
+    width: 320px;
+    height: auto;
+    user-select: none;
+  }
 
-        function parseJwt(token) {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-                atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
-            );
-            return JSON.parse(jsonPayload);
-        }
+  /* hint container (non-blocking) */
+  .click-hint{
+    pointer-events: none; /* allow clicks through the hint */
+    position: absolute;
+    inset: 0; /* full cover */
+    display: block;
+  }
 
-        function displayGoogleUserInfo(data) {
-            document.getElementById('google-name').innerText = `Name: ${data.name}`;
-            document.getElementById('google-email').innerText = `Email: ${data.email}`;
-            document.getElementById('google-id').innerText = `Google ID: ${data.sub}`;
-            document.getElementById('google-profile-img').src = data.picture;
-        }
+  /* the animated hand (SVG) */
+  .hand{
+    position: absolute;
+    width: var(--hint-size);
+    height: var(--hint-size);
+    left: calc(100% - var(--hint-size) - var(--gap)); /* start near right-bottom by default */
+    top: calc(100% - var(--hint-size) - var(--gap));
+    transform-origin: 60% 30%; /* pivot for press effect */
+    transform: translate(0,0) scale(0.98);
+    will-change: transform, opacity, filter;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.18));
+    opacity: 0.98;
+    animation: hint-move var(--duration) cubic-bezier(.2,.9,.3,1) infinite;
+    z-index: 4;
+  }
 
-        function saveUserInfo(provider, data) {
-            const userInfo = { provider, data };
-            localStorage.setItem('userInfo', JSON.stringify(userInfo));
-        }
+  /* small scale up to suggest cursor growth when hovering */
+  @keyframes hint-move{
+    0%   { transform: translate(0,0) scale(0.92); }
+    18%  { transform: translate(-12px,-10px) scale(1.06); } /* hover-in + bigger */
+    35%  { transform: translate(-12px,-10px) scale(1.0); }  /* settle */
+    45%  { transform: translate(-8px,-6px) scale(0.96); }   /* press approach */
+    50%  { transform: translate(-8px,-6px) scale(0.86); }   /* press (finger compress) */
+    55%  { transform: translate(-8px,-6px) scale(0.96); }   /* release */
+    75%  { transform: translate(-14px,-12px) scale(1.02); } /* slight attention move */
+    100% { transform: translate(0,0) scale(0.92); }         /* loop back */
+  }
 
-        function checkLocalStorage() {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            if (userInfo) {
-                if (userInfo.provider === 'google') {
-                    displayGoogleUserInfo(userInfo.data);
-                } else if (userInfo.provider === 'facebook') {
-                    displayFacebookUserInfo(userInfo.data);
-                }
-            }
-        }
+  /* the click ripple */
+  .ripple{
+    position: absolute;
+    left: calc(100% - var(--hint-size) - var(--gap) + (var(--hint-size) / 2) - (var(--ripple-size)/2));
+    top: calc(100% - var(--hint-size) - var(--gap) + (var(--hint-size) / 2) - (var(--ripple-size)/2));
+    width: var(--ripple-size);
+    height: var(--ripple-size);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent), transparent 50%);
+    transform: scale(0.2);
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
+    animation: ripple var(--duration) cubic-bezier(.2,.9,.3,1) infinite;
+  }
 
-        window.onload = function() {
-            checkLocalStorage();
-            google.accounts.id.initialize({
-                client_id: '847644538886-h57vcktcmjhdlj553b33js8tnenlge62', // Replace with your Google Client ID
-                callback: handleCredentialResponse,
-                cancel_on_tap_outside: false,
-            });
-            google.accounts.id.prompt();
-        };
+  @keyframes ripple{
+    0%   { transform: scale(0.15); opacity: 0; }
+    45%  { transform: scale(0.75); opacity: 0.18; }
+    50%  { transform: scale(0.9); opacity: 0.32; }  /* moment of click */
+    65%  { transform: scale(1.25); opacity: 0.06; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
 
-        window.fbAsyncInit = function() {
-            FB.init({
-                appId: '2236984449983471', // Replace with your Facebook App ID
-                cookie: true,
-                xfbml: true,
-                version: 'v17.0'
-            });
+  /* tiny dot to mark the exact click spot for clarity */
+  .dot{
+    position: absolute;
+    left: calc(100% - var(--hint-size) - var(--gap) + (var(--hint-size) / 2) - 6px);
+    top: calc(100% - var(--hint-size) - var(--gap) + (var(--hint-size) / 2) - 6px);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.12);
+    z-index: 3;
+    opacity: 0.98;
+    pointer-events: none;
+    animation: dot-pulse var(--duration) infinite;
+  }
 
-            // Check login status
-            FB.getLoginStatus(function(response) {
-                if (response.status === 'connected') {
-                    fetchFacebookUserInfo();
-                }
-            });
-        };
+  @keyframes dot-pulse{
+    0%   { transform: scale(0.92); opacity: 0.9; }
+    50%  { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(0.92); opacity: 0.9; }
+  }
 
-        (function(d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
-            js = d.createElement(s); js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
+  /* Accessibility: respect reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .hand, .ripple, .dot { animation: none; transform: translate(0,0) scale(1); opacity: 1; }
+  }
 
-        function fetchFacebookUserInfo() {
-            FB.api('/me', { fields: 'id,name,email,picture.width(400).height(400)' }, function(response) {
-                console.log('Facebook User Info:', response);
+  /* -- Optional: move the hint to the center or left by adding a class -- */
+  .click-hint.center .hand,
+  .click-hint.center .ripple,
+  .click-hint.center .dot{
+    left: calc(50% - var(--hint-size)/2);
+    top: calc(50% - var(--hint-size)/2);
+  }
 
-                // Save Facebook user information in local storage
-                saveUserInfo('facebook', response);
+  .click-hint.left .hand,
+  .click-hint.left .ripple,
+  .click-hint.left .dot{
+    left: calc(var(--gap));
+    top: calc(100% - var(--hint-size) - var(--gap));
+  }
 
-                // Display Facebook user info
-                displayFacebookUserInfo(response);
-            });
-        }
-
-        function displayFacebookUserInfo(data) {
-            document.getElementById('facebook-name').innerText = `Name: ${data.name}`;
-            document.getElementById('facebook-email').innerText = `Email: ${data.email}`;
-            document.getElementById('facebook-id').innerText = `Facebook ID: ${data.id}`;
-            document.getElementById('facebook-profile-img').src = data.picture.data.url;
-        }
-
-        function loginWithFacebook() {
-            FB.login(function(response) {
-                if (response.authResponse) {
-                    fetchFacebookUserInfo();
-                } else {
-                    console.error('User cancelled Facebook login or did not fully authorize.');
-                }
-            }, { scope: 'public_profile,email' });
-        }
-    </script>
+  /* small responsive tweak */
+  @media (max-width:360px){
+    :root{ --hint-size: 48px; --ripple-size:88px; --gap:10px; }
+  }
+</style>
 </head>
-<body>
-    <h1>Google and Facebook Login Demo</h1>
+<body style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:28px;background:#f6f7fb;">
 
-    <!-- Google Login Section -->
-    <h2>Google Login</h2>
-    <div id="g_id_onload"
-         data-client_id="847644538886-h57vcktcmjhdlj553b33js8tnenlge62" 
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
-    </div>
-    <div class="g_id_signin" data-type="standard"></div>
+  <!-- EXAMPLE: right-bottom hint -->
+  <div class="img-wrap" aria-hidden="false">
+    <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=123" alt="Example image" />
+    <div class="click-hint" role="presentation">
+      <!-- ripple, dot and hand -->
+      <div class="ripple" aria-hidden="true"></div>
+      <div class="dot" aria-hidden="true"></div>
 
-    <div>
-        <p id="google-name">Name: </p>
-        <p id="google-email">Email: </p>
-        <p id="google-id">Google ID: </p>
-        <img id="google-profile-img" alt="Google Profile Image">
+      <!-- Hand Icon -->
+       <i class="hand" class="fa-thin fa-hand-pointer"></i>
+   
     </div>
+  </div>
 
-    <!-- Facebook Login Section -->
-    <h2>Facebook Login</h2>
-    <button onclick="loginWithFacebook()">Login with Facebook</button>
-    <div>
-        <p id="facebook-name">Name: </p>
-        <p id="facebook-email">Email: </p>
-        <p id="facebook-id">Facebook ID: </p>
-        <img id="facebook-profile-img" alt="Facebook Profile Image">
+  <!-- EXAMPLE: center hint variant -->
+  <div class="img-wrap" aria-hidden="false">
+    <img src="https://images.unsplash.com/photo-1521335629791-ce4aec67dd47?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=456" alt="Another example" />
+    <div class="click-hint center" role="presentation">
+      <div class="ripple" aria-hidden="true"></div>
+      <div class="dot" aria-hidden="true"></div>
+      <svg class="hand" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="white" stroke="#2b2b2b" stroke-width="0.6" d="M9.5 2a1.5 1.5 0 0 0-1.5 1.5V10a1 1 0 0 1-1 1H7a3 3 0 0 0-3 3v1.5A3.5 3.5 0 0 0 7.5 19H9v-6.2a1 1 0 0 1 .3-.7l4-4A1 1 0 0 1 14 7h0a1 1 0 0 1 1 .2L16.5 9a1 1 0 0 0 1.3.2l.5-.3a1.2 1.2 0 0 1 1.5.2c.4.5.2 1.1-.2 1.6L15.5 16 9.8 13.2A1 1 0 0 1 9 12.6V3.5A1.5 1.5 0 0 0 9.5 2z"/>
+      </svg>
     </div>
+  </div>
+
+<script>
+  // Optional JS: If you want the visual "click" to also trigger a real click event on the image,
+  // uncomment the block below. It listens for the end of each ripple animation cycle and
+  // dispatches a click on the underlying image (so it actually opens links etc).
+  //
+  // NOTE: Only enable this if you want automatic programmatic clicks — most UX designers
+  // prefer the hint to be purely visual so it doesn't perform actions without user input.
+
+  /*
+  document.querySelectorAll('.img-wrap').forEach(wrap=>{
+    const ripple = wrap.querySelector('.ripple');
+    const img = wrap.querySelector('img');
+    if (!ripple || !img) return;
+
+    ripple.addEventListener('animationiteration', () => {
+      // dispatch a click on the image (visual only; will run native handlers)
+      img.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+    });
+  });
+  */
+</script>
 </body>
 </html>

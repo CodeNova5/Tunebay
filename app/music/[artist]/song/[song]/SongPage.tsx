@@ -508,6 +508,7 @@ export default function SongPage() {
                                     color: '#fff',
                                     border: 'none',
                                     borderRadius: '4px',
+                                    width: '150px',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                 }}
@@ -538,9 +539,42 @@ export default function SongPage() {
                     </div>
                 ) : (
                     <Link href={`/music/${encodeURIComponent(track.artists[0].name)}`}>
-                        <h3 style={{ fontSize: "16px", margin: "10px 0" }}>View Artist</h3>
+                        <h3 style={{ fontSize: "16px", margin: "10px 0", width: "150px" }}>View Artist</h3>
                     </Link>
                 )}
+            </div>
+            <div style={{ marginTop: "20px" }}>
+                <a href={SMART_LINK} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
+                    <img
+                        src="/ad-banner.jpg"
+                        alt="Ad Banner"
+                        style={{
+                            width: "90%",
+                            borderRadius: "10px",
+                            animation: "adPulse 1.5s infinite cubic-bezier(0.4,0,0.2,1), adWobble 3s infinite linear"
+                        }}
+                    />
+                </a>
+                <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
+                    This link is sponsored
+                </p>
+                <style>
+                    {`
+                        @keyframes adPulse {
+                            0% { transform: scale(1);}
+                            50% { transform: scale(1.07);}
+                            100% { transform: scale(1);}
+                        }
+                        @keyframes adWobble {
+                            0% { filter: brightness(1) hue-rotate(0deg);}
+                            20% { filter: brightness(1.08) hue-rotate(10deg);}
+                            40% { filter: brightness(1.05) hue-rotate(-10deg);}
+                            60% { filter: brightness(1.1) hue-rotate(8deg);}
+                            80% { filter: brightness(1.05) hue-rotate(-8deg);}
+                            100% { filter: brightness(1) hue-rotate(0deg);}
+                        }
+                    `}
+                </style>
             </div>
             <div id="youtube-video" style={{ marginTop: "20px" }}>
                 {videoId ? (

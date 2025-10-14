@@ -10,7 +10,7 @@ interface RedirectModalProps {
 
 export default function RedirectModal({ targetUrl, onClose }: RedirectModalProps) {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(4);
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     if (countdown === 0) {
