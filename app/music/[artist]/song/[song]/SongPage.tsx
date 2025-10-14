@@ -548,8 +548,10 @@ export default function SongPage() {
                     <img
                         src="/ad-banner.jpg"
                         alt="Ad Banner"
+                        width="468"
+                        height="200"
                         style={{
-                            width: "90%",
+                           
                             borderRadius: "10px",
                             animation: "adPulse 1.5s infinite cubic-bezier(0.4,0,0.2,1), adWobble 3s infinite linear"
                         }}

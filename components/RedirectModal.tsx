@@ -10,7 +10,20 @@ interface RedirectModalProps {
 
 export default function RedirectModal({ targetUrl, onClose }: RedirectModalProps) {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(3);
+  // Track visits in localStorage
+  useEffect(() => {
+    const visits = Number(localStorage.getItem("redirectVisits") || "0") + 1;
+    localStorage.setItem("redirectVisits", visits.toString());
+  }, []);
+
+  // Set initial countdown based on visits
+  const getInitialCountdown = () => {
+    const visits = Number(localStorage.getItem("redirectVisits") || "1");
+    if (visits > 10) return 1;
+    if (visits > 5) return 2;
+    return 3;
+  };
+  const [countdown, setCountdown] = useState(getInitialCountdown());
 
   useEffect(() => {
     if (countdown === 0) {
