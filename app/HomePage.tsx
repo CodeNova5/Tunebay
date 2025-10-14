@@ -120,7 +120,7 @@ export default function HomePage() {
                             return (
                                 <div
                                     key={pageIndex}
-                                    className="snap-start shrink-0 flex flex-col gap-4 w-[85vw] sm:w-[360px] md:w-[480px]"
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[80vw] sm:w-[360px] md:w-[480px]"
                                 >
                                     {pageSongs.map((song, i) => (
                                         <Link
@@ -160,7 +160,7 @@ export default function HomePage() {
                             return (
                                 <div
                                     key={pageIndex}
-                                    className="snap-start shrink-0 flex flex-col gap-4 w-[85vw] sm:w-[360px] md:w-[480px]"
+                                    className="snap-start shrink-0 flex flex-col gap-4 w-[80vw] sm:w-[360px] md:w-[480px]"
                                 >
                                     {pageSongs.map((song, i) => (
                                         <Link

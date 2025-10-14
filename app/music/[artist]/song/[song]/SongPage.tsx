@@ -138,8 +138,8 @@ export default function SongPage() {
             data,
             provider: "google"
         }));
-        setShouldRefresh(true);
         setUserInfo(data);
+        router.refresh();
     };
 
     // Refresh the page after userInfo is set

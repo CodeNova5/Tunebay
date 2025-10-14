@@ -1053,14 +1053,12 @@ export default async function handler(req, res) {
 
         const response = await axios.request(options);
 
-        // 3️⃣ Format top songs
-        const topSongs = response.data.map((song) => ({
-          rank: song.rank || song.position || 0,
-          title: song.title || song.song || "Unknown Title",
-          artist: song.artist || song.artist_name || "Unknown Artist",
-          image: song.image || song.cover || "/placeholder.jpg",
+        // 3️⃣ Format top songs and get only 50 songs
+        const topSongs = response.data.slice(0, 50).map((song) => ({
+          title: song.title,
+          artist: song.artist,
+          image: song.cover,
         }));
-
         // promise all and get images using spotify
         const accessToken = await getSpotifyAccessToken();
         const topSongsWithImages = await Promise.all(
