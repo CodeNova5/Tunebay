@@ -20,6 +20,7 @@ import { SongCache } from "../../models/songCache.js";
 import { ArtistAlbumsCache } from "../../models/songCache.js";
 import { ArtistSongsCache } from "../../models/songCache.js";
 import { TopSongsCache } from "../../models/songCache.js";
+import { TopArtistsCache } from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
 let artistTokenExpiresAt = 0;
 
@@ -1110,19 +1111,18 @@ export default async function handler(req, res) {
 
       try {
         const cacheKey = `trendingArtists`;
-        // 2️⃣ Try Redis cache next
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          console.log("redis cache hit for", cacheKey);
-          res.setHeader(
-            "Cache-Control",
-            "public, s-maxage=604800, stale-while-revalidate"
-          );
-          return res.status(200).json(cached);
+        // 1 Try mongo cache first
+        await connectDB();
+        const mongoCache = await TopArtistsCache.findOne({ cacheKey });
+        if (mongoCache) {
+          console.log("MongoDB cache hit for", cacheKey);
+          res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
+          return res.status(200).json(mongoCache.data);
         }
+       
         // Fetch trending artists from Last.fm
         const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=chart.gettopartists&limit=20`;
-        const { response, data } = await fetchWithLastFmKeys(
+        const { data } = await fetchWithLastFmKeys(
           apiUrl,
           () => LAST_FM_API_KEY,
           () => LAST_FM_API_KEY2
@@ -1169,8 +1169,11 @@ export default async function handler(req, res) {
           })
         );
         // Cache for 7 days
-        await redis.set(cacheKey, JSON.stringify(trendingArtists), { ex: 604800 });
-
+        await TopArtistsCache.updateOne(
+          { cacheKey },
+          { $set: { data: trendingArtists, createdAt: new Date() } },
+          { upsert: true }
+        );
 
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
         return res.status(200).json(trendingArtists);
