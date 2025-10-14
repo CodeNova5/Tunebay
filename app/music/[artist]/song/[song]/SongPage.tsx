@@ -288,6 +288,13 @@ export default function SongPage() {
         }
     }
 
+
+     // Increment visit count in localStorage every time this page is loaded
+    React.useEffect(() => {
+        const visits = Number(localStorage.getItem("redirectVisits") || "0") + 1;
+        localStorage.setItem("redirectVisits", visits.toString());
+    }, []);
+    // Handle smart redirect
     // Add this helper to check GitHub for the file
     async function checkGithubFileExists(fileName: string): Promise<string | null> {
         const artistName = track?.artists[0]?.name || "Unknown Artist";
