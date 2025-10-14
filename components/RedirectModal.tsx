@@ -19,8 +19,8 @@ export default function RedirectModal({ targetUrl, onClose }: RedirectModalProps
   // Set initial countdown based on visits
   const getInitialCountdown = () => {
     const visits = Number(localStorage.getItem("redirectVisits") || "1");
-    if (visits > 10) return 1;
-    if (visits > 5) return 2;
+    if (visits > 5) return 1;
+    if (visits > 3) return 2;
     return 3;
   };
   const [countdown, setCountdown] = useState(getInitialCountdown());
