@@ -9,7 +9,6 @@ const YOUTUBE_API_KEY2 = process.env.YOUTUBE_API_KEY2;
 const LAST_FM_API_KEY = process.env.LAST_FM_API_KEY;
 const LAST_FM_API_KEY2 = process.env.LAST_FM_API_KEY2;
 import nodemailer from "nodemailer";
-import { redis } from "../../components/redis.js";  // ✅ only one client reused
 let spotifyAccessToken = null;
 let spotifyTokenExpiresAt = 0;
 let albumTokenExpiresAt = 0;
