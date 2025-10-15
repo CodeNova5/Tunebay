@@ -12,7 +12,7 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
-import { set } from "mongoose";
+
 
 declare global {
     interface Window {
@@ -133,24 +133,31 @@ export default function SongPage() {
         return JSON.parse(jsonPayload);
     };
 
-    const saveUserInfo = (data: any) => {
-        localStorage.setItem('userInfo', JSON.stringify({
-            data,
-            provider: "google"
-        }));
-        setUserInfo(data);
-        router.refresh();
-    };
+const saveUserInfo = (data: any) => {
+    localStorage.setItem('userInfo', JSON.stringify({
+        data,
+        provider: "google"
+    }));
+    setUserInfo(data);
 
-    // Refresh the page after userInfo is set
-    React.useEffect(() => {
-        if (shouldRefresh && userInfo) {
-            setShouldRefresh(false);
-            router.refresh();
+    // Save user details to backend (name, email, image, notificationToken: null)
+    fetch('/api/Music/route?type=storeUserDetail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            image: data.picture,
+            notificationToken: null
+        })
+    })
+    .then((res) => {
+        if (res.ok) {
+            window.location.reload();
         }
-    }, [shouldRefresh, userInfo, router]);
-
-
+    })
+    .catch(() => {});
+};
     // Disable background scroll when modal is open
     React.useEffect(() => {
         if (modalMessage) {

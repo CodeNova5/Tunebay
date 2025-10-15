@@ -33,6 +33,14 @@ const topArtistsCacheSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now, expires: 60 * 60 * 24 * 7 } // 7 days
 });
 
+// User detail including notification token no expiry
+const UserDetailSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  image: { type: String, required: false }, 
+  notificationToken: { type: String, required: false },
+  createdAt: { type: Date, default: Date.now }
+});
 
 // Prevent model overwrite issues in dev
 const SongCache = mongoose.models.SongCache || mongoose.model("SongCache", SongCacheSchema);
@@ -40,4 +48,5 @@ const ArtistAlbumsCache = mongoose.models.ArtistAlbumsCache || mongoose.model("A
 const ArtistSongsCache = mongoose.models.ArtistSongsCache || mongoose.model("ArtistSongsCache", ArtistSongsCacheSchema);
 const TopSongsCache = mongoose.models.TopSongsCache || mongoose.model("TopSongsCache", topSongsCacheSchema);
 const TopArtistsCache = mongoose.models.TopArtistsCache || mongoose.model("TopArtistsCache", topArtistsCacheSchema);
-export { SongCache, ArtistAlbumsCache, ArtistSongsCache, TopSongsCache, TopArtistsCache };
+const UserDetail = mongoose.models.UserDetail || mongoose.model("UserDetail", UserDetailSchema);
+export { SongCache, ArtistAlbumsCache, ArtistSongsCache, TopSongsCache, TopArtistsCache, UserDetail };

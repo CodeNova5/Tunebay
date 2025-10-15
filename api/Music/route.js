@@ -264,6 +264,25 @@ export default async function handler(req, res) {
       return res.status(200).json(json);
     }
 
+    else if (type === "storeUserDetail") {
+      const { name, email, image, notificationToken } = req.body;
+      if (!name || !email) {
+        return res.status(400).json({ error: "Missing name or email in request body" });
+      }
+      try {
+        await connectDB();
+        await UserDetail.updateOne(
+          { email },
+          { $set: { name, image, notificationToken, createdAt: new Date() } },
+          { upsert: true }
+        );
+        return res.status(200).json({ message: "User details stored/updated successfully" });
+      } catch (dbErr) {
+        console.error("MongoDB Error:", dbErr);
+        return res.status(500).json({ error: "Failed to store user details" });
+      }
+    }
+
     else if (type === "songDetails") {
       if (!artistName || !songName) {
         return res.status(400).json({ error: "Missing artist name or song name" });
