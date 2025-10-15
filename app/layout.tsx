@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NotificationModal from "@/components/NotificationModal";
-import { getOrCreateUserId } from "@/utils/generateUserId"; // adjust path if needed
 
 
 const geistSans = Geist({
@@ -14,7 +13,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-getOrCreateUserId();
 
 export default function RootLayout({
   children,
