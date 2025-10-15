@@ -1,14 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { requestNotificationPermission } from "@/utils/requestPermission";
 import { Bell, X } from "lucide-react";
 
 export default function NotificationModal() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [granted, setGranted] = useState(false);
+
+  useEffect(() => {
+    // Only show if permission hasn’t been granted yet
+    if (typeof window !== "undefined") {
+      const currentPermission = Notification.permission;
+      if (currentPermission === "default") {
+        setShow(true);
+      } else if (currentPermission === "granted") {
+        setGranted(true);
+        setShow(false);
+      } else {
+        // permission = "denied"
+        setShow(false);
+      }
+    }
+  }, []);
 
   const handleEnable = async () => {
     setLoading(true);
@@ -17,7 +33,15 @@ export default function NotificationModal() {
 
     if (token) {
       setGranted(true);
-      setTimeout(() => setShow(false), 2000); // auto close after success
+      setTimeout(() => setShow(false), 1800); // close smoothly
+      fetch('/api/Music/route?type=storeUserDetail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Replace these with actual user details if available
+          notificationToken: token // <-- pass the token here
+        })
+      });
     }
   };
 
@@ -35,7 +59,7 @@ export default function NotificationModal() {
             initial={{ scale: 0.8, opacity: 0, y: 40 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", duration: 0.5 }}
+            transition={{ type: 'spring', duration: 0.5 }}
           >
             {/* Close button */}
             <button
@@ -49,7 +73,7 @@ export default function NotificationModal() {
             <motion.div
               initial={{ rotate: -10, scale: 0.8 }}
               animate={{ rotate: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 200 }}
+              transition={{ type: 'spring', stiffness: 200 }}
               className="mx-auto mb-4 bg-green-500/10 border border-green-500/30 rounded-full p-3 w-fit"
             >
               <Bell className="text-green-500" size={36} />
@@ -63,7 +87,7 @@ export default function NotificationModal() {
               Enable notifications to get updates when new songs, albums, or artist drops hit Tunebay.
             </p>
 
-            {/* Button */}
+            {/* Button / Feedback */}
             {!granted ? (
               <button
                 onClick={handleEnable}

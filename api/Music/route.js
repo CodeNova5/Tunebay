@@ -266,17 +266,44 @@ export default async function handler(req, res) {
 
     else if (type === "storeUserDetail") {
       const { name, email, image, notificationToken } = req.body;
-      if (!name || !email) {
-        return res.status(400).json({ error: "Missing name or email in request body" });
+
+      if (!notificationToken && !email) {
+        return res.status(400).json({ error: "Missing notificationToken or email in request body" });
       }
+
       try {
         await connectDB();
-        await UserDetail.updateOne(
-          { email },
-          { $set: { name, image, notificationToken, createdAt: new Date() } },
-          { upsert: true }
+
+        let filter = {};
+        if (email) {
+          filter.email = email; // If we have email, use it as the main key
+        } else if (notificationToken) {
+          filter.notificationToken = notificationToken; // Otherwise, fall back to token
+        }
+
+        const updateData = {
+          updatedAt: new Date(),
+        };
+
+        // Only set these if they exist
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (image) updateData.image = image;
+        if (notificationToken) updateData.notificationToken = notificationToken;
+
+        const user = await UserDetail.findOneAndUpdate(
+          filter,
+          {
+            $set: updateData,
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true, returnDocument: "after" }
         );
-        return res.status(200).json({ message: "User details stored/updated successfully" });
+
+        return res.status(200).json({
+          message: "User details stored/updated successfully",
+          user,
+        });
       } catch (dbErr) {
         console.error("MongoDB Error:", dbErr);
         return res.status(500).json({ error: "Failed to store user details" });
@@ -1138,7 +1165,7 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
-       
+
         // Fetch trending artists from Last.fm
         const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=chart.gettopartists&limit=20`;
         const { data } = await fetchWithLastFmKeys(

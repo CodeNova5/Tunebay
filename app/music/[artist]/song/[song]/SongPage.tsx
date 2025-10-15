@@ -12,9 +12,6 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
-import NotificationModal from "@/components/NotificationModal";
-
-
 declare global {
     interface Window {
         google: any;
@@ -461,7 +458,6 @@ export default function SongPage() {
     return (
         <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
             <Header />
-            <NotificationModal />
             <div style={{ fontSize: "25px", fontWeight: "bold" }}>
                 <h1>{track.name} by </h1>
                 <h2>
