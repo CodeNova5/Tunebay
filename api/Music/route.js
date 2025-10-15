@@ -21,6 +21,7 @@ import { ArtistAlbumsCache } from "../../models/songCache.js";
 import { ArtistSongsCache } from "../../models/songCache.js";
 import { TopSongsCache } from "../../models/songCache.js";
 import { TopArtistsCache } from "../../models/songCache.js";
+import { UserDetail } from "../../models/songCache.js";
 import { connectDB } from "../../lib/mongodb.js";
 let artistTokenExpiresAt = 0;
 
