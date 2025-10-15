@@ -10,7 +10,6 @@ export async function requestNotificationPermission() {
     const token = await getToken(messaging, {
       vapidKey: "BEvnsPzvqGc4nrfwtMGILhEQzBNQ5zAtIn7gLQuT48Ix6RJdbWbisZYOz0AeRV7Wc0L6hsn0JlfAPUk63xyM_AA",
     });
-    console.log("FCM Token:", token);
     return token;
   } else {
     console.warn("Notification permission not granted.");

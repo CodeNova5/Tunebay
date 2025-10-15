@@ -12,9 +12,7 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
-import { requestNotificationPermission } from "@/utils/requestPermission";
-
-
+import NotificationModal from "@/components/NotificationModal";
 
 
 declare global {
@@ -54,18 +52,7 @@ export default function SongPage() {
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
     const [showModal, setShowModal] = React.useState(false);
-    const [shouldRefresh, setShouldRefresh] = React.useState(false);
-
-
-
-    React.useEffect(() => {
-        requestNotificationPermission()
-            .then((token) => {
-                if (token) console.log("Notification token:", token);
-            })
-            .catch(console.error);
-    }, []);
-
+   
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
             .then(res => res.json())
@@ -474,7 +461,7 @@ export default function SongPage() {
     return (
         <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
             <Header />
-
+            <NotificationModal />
             <div style={{ fontSize: "25px", fontWeight: "bold" }}>
                 <h1>{track.name} by </h1>
                 <h2>
