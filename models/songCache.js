@@ -35,6 +35,7 @@ const topArtistsCacheSchema = new mongoose.Schema({
 
 // User detail including notification token no expiry
 const UserDetailSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   image: { type: String, required: false }, 
