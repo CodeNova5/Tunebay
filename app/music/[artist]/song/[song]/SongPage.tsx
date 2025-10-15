@@ -12,6 +12,8 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
+import { getOrCreateUserId } from "@/utils/generateUserId"; // adjust path if needed
+
 declare global {
     interface Window {
         google: any;
@@ -140,10 +142,10 @@ export default function SongPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                userId: getOrCreateUserId(), // Ensure you send the user ID
                 name: data.name,
                 email: data.email,
                 image: data.picture,
-                notificationToken: null
             })
         })
             .then((res) => {

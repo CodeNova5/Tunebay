@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { requestNotificationPermission } from "@/utils/requestPermission";
 import { Bell, X } from "lucide-react";
+import { getOrCreateUserId } from "@/utils/generateUserId"; // adjust path if needed
 
 export default function NotificationModal() {
   const [show, setShow] = useState(false);
@@ -34,12 +35,15 @@ export default function NotificationModal() {
     if (token) {
       setGranted(true);
       setTimeout(() => setShow(false), 1800); // close smoothly
-      fetch('/api/Music/route?type=storeUserDetail', {
+      getOrCreateUserId();
+
+      // Send the token to your backend to store it
+      await fetch('/api/Music/route?type=storeUserDetail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Replace these with actual user details if available
-          notificationToken: token // <-- pass the token here
+            userId: getOrCreateUserId(), // Ensure you send the user ID
+            notificationToken: token // <-- pass the token here
         })
       });
     }

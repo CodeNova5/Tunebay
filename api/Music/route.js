@@ -265,50 +265,38 @@ export default async function handler(req, res) {
     }
 
     else if (type === "storeUserDetail") {
-      const { name, email, image, notificationToken } = req.body;
+      const { name, email, image, notificationToken, userId } = req.body;
 
-      if (!notificationToken && !email) {
-        return res.status(400).json({ error: "Missing notificationToken or email in request body" });
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId in request body" });
       }
 
       try {
         await connectDB();
 
-        let filter = {};
-        if (email) {
-          filter.email = email; // If we have email, use it as the main key
-        } else if (notificationToken) {
-          filter.notificationToken = notificationToken; // Otherwise, fall back to token
-        }
-
-        const updateData = {
-          updatedAt: new Date(),
-        };
-
-        // Only set these if they exist
+        // Build the data to update dynamically
+        const updateData = { updatedAt: new Date() };
         if (name) updateData.name = name;
         if (email) updateData.email = email;
         if (image) updateData.image = image;
         if (notificationToken) updateData.notificationToken = notificationToken;
 
-        const user = await UserDetail.findOneAndUpdate(
-          filter,
+        await UserDetail.updateOne(
+          { userId },
           {
             $set: updateData,
             $setOnInsert: { createdAt: new Date() },
           },
-          { upsert: true, returnDocument: "after" }
+          { upsert: true }
         );
 
-        return res.status(200).json({
-          message: "User details stored/updated successfully",
-          user,
-        });
+        return res.status(200).json({ message: "User details stored/updated successfully" });
       } catch (dbErr) {
         console.error("MongoDB Error:", dbErr);
         return res.status(500).json({ error: "Failed to store user details" });
       }
     }
+
 
     else if (type === "songDetails") {
       if (!artistName || !songName) {
