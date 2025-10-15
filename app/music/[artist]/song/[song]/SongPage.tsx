@@ -12,6 +12,9 @@ import AudioPlayer from 'react-h5-audio-player';
 import './audioPlayerStyles.css';
 import RedirectModal from "@/components/RedirectModal";
 import { SMART_LINK } from "@/config";
+import { requestNotificationPermission } from "@/utils/requestPermission";
+
+
 
 
 declare global {
@@ -54,6 +57,14 @@ export default function SongPage() {
     const [shouldRefresh, setShouldRefresh] = React.useState(false);
 
 
+
+    React.useEffect(() => {
+        requestNotificationPermission()
+            .then((token) => {
+                if (token) console.log("Notification token:", token);
+            })
+            .catch(console.error);
+    }, []);
 
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
@@ -133,31 +144,31 @@ export default function SongPage() {
         return JSON.parse(jsonPayload);
     };
 
-const saveUserInfo = (data: any) => {
-    localStorage.setItem('userInfo', JSON.stringify({
-        data,
-        provider: "google"
-    }));
-    setUserInfo(data);
+    const saveUserInfo = (data: any) => {
+        localStorage.setItem('userInfo', JSON.stringify({
+            data,
+            provider: "google"
+        }));
+        setUserInfo(data);
 
-    // Save user details to backend (name, email, image, notificationToken: null)
-    fetch('/api/Music/route?type=storeUserDetail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: data.name,
-            email: data.email,
-            image: data.picture,
-            notificationToken: null
+        // Save user details to backend (name, email, image, notificationToken: null)
+        fetch('/api/Music/route?type=storeUserDetail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: data.name,
+                email: data.email,
+                image: data.picture,
+                notificationToken: null
+            })
         })
-    })
-    .then((res) => {
-        if (res.ok) {
-            window.location.reload();
-        }
-    })
-    .catch(() => {});
-};
+            .then((res) => {
+                if (res.ok) {
+                    window.location.reload();
+                }
+            })
+            .catch(() => { });
+    };
     // Disable background scroll when modal is open
     React.useEffect(() => {
         if (modalMessage) {
@@ -296,7 +307,7 @@ const saveUserInfo = (data: any) => {
     }
 
 
-     // Increment visit count in localStorage every time this page is loaded
+    // Increment visit count in localStorage every time this page is loaded
     React.useEffect(() => {
         const visits = Number(localStorage.getItem("redirectVisits") || "0") + 1;
         localStorage.setItem("redirectVisits", visits.toString());
@@ -565,7 +576,7 @@ const saveUserInfo = (data: any) => {
                         width="468"
                         height="200"
                         style={{
-                           
+
                             borderRadius: "10px",
                             animation: "adPulse 1.5s infinite cubic-bezier(0.4,0,0.2,1), adWobble 3s infinite linear"
                         }}

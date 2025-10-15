@@ -1,8 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { requestNotificationPermission } from "@/utils/requestPermission";
-import { useEffect } from "react";
-
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,15 +17,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  useEffect(() => {
-  requestNotificationPermission()
-      .then((token) => {
-        if (token) console.log("Notification token:", token);
-      })
-      .catch(console.error);
-}, []);
-
   return (
     <html lang="en">
       <head>
