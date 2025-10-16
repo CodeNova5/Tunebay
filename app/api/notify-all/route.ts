@@ -1,29 +1,39 @@
-// app/api/notify-all/route.ts
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb.js";
+import { NextRequest, NextResponse } from "next/server";
+import connectDB from "@/lib/dbConnect.js";
 import { UserDetail } from "@/models/songCache.js";
-import { sendNotificationToTokens } from "@/lib/sendNotification";
+import admin from "@/lib/firebaseAdmin";
 
-export async function POST(req: Request) {
-  const { title, body, url } = await req.json();
-
-  if (!title || !body) {
-    return NextResponse.json({ error: "Missing title or body" }, { status: 400 });
-  }
-
+export async function POST(req: NextRequest) {
   try {
+    const { title, body, url } = await req.json();
     await connectDB();
-    const users = await UserDetail.find({ notificationToken: { $exists: true, $ne: null } });
 
-    const tokens = users.map((u: any) => u.notificationToken).filter(Boolean);
+    const users = await UserDetail.find({
+      notificationToken: { $exists: true, $ne: null },
+    });
 
-    console.log(`Sending notification to ${tokens.length} users...`);
+    if (users.length === 0) {
+      return NextResponse.json({ message: "No users with tokens found" });
+    }
 
-    await sendNotificationToTokens(tokens, title, body);
+    const tokens = users.map((u) => u.notificationToken);
 
-    return NextResponse.json({ success: true, count: tokens.length });
+    const payload = {
+      notification: { title, body, url, icon: "/favicon.png" },
+    };
+
+    const response = await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: payload.notification,
+    });
+
+    return NextResponse.json({
+      message: "Notifications sent successfully",
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    });
   } catch (error) {
-    console.error("Error broadcasting notifications:", error);
+    console.error("Error sending notifications:", error);
     return NextResponse.json({ error: "Failed to send notifications" }, { status: 500 });
   }
 }
