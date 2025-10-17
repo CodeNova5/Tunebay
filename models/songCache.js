@@ -37,7 +37,7 @@ const topArtistsCacheSchema = new mongoose.Schema({
 const UserDetailSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: false, unique: true, sparse: true },
   image: { type: String, required: false }, 
   notificationToken: { type: String, required: false },
   createdAt: { type: Date, default: Date.now }
