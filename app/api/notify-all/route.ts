@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/dbConnect.js";
+import { connectDB } from "@/lib/dbConnect.js";
 import { UserDetail } from "@/models/songCache.js";
 import admin from "@/lib/firebaseAdmin";
 
