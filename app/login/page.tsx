@@ -59,10 +59,15 @@ export default function LoginPage() {
             cancel_on_tap_outside: false,
           });
 
-          // Only prompt One Tap if not signed in
+          window.google.accounts.id.renderButton(
+            document.getElementById("googleSignInButton"),
+            { theme: "filled_black", size: "large", shape: "pill" }
+          );
+
           if (!userInfo) {
             window.google.accounts.id.prompt();
           }
+
         }
       };
     } else {
@@ -73,9 +78,16 @@ export default function LoginPage() {
           callback: window.handleCredentialResponse,
           cancel_on_tap_outside: false,
         });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById("googleSignInButton"),
+          { theme: "filled_black", size: "large", shape: "pill" }
+        );
+
         if (!userInfo) {
           window.google.accounts.id.prompt();
         }
+
       }
     }
   }, [googleClientId, userInfo]);
@@ -105,19 +117,8 @@ export default function LoginPage() {
 
       <div style={styles.section}>
         <h2 style={styles.subtitle}>Google Login</h2>
-        {googleClientId && (
-          <>
-            <div
-              id="g_id_onload"
-              data-client_id={googleClientId}
-              data-context="signin"
-              data-ux_mode="popup"
-              data-callback="handleCredentialResponse"
-              data-auto_prompt="false"
-            />
-            <div className="g_id_signin" data-type="standard" />
-          </>
-        )}
+        {googleClientId && <div id="googleSignInButton" />}
+
       </div>
 
       {userInfo && (

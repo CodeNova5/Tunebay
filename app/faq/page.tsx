@@ -36,7 +36,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border-b last:border-none py-5">
+    <div className="border-b text-black last:border-none py-5">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between text-left focus:outline-none hover:text-indigo-600 transition-colors"

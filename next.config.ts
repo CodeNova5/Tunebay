@@ -1,4 +1,3 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const withPWA: any = require('next-pwa')({
   dest: 'public',
@@ -8,25 +7,25 @@ const withPWA: any = require('next-pwa')({
 });
 
 const nextConfig = {
+  reactStrictMode: true,
+
+  // ✅ Add headers to fix Google login postMessage issue
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Adjust path to match your actual login route
+        source: '/login',
         headers: [
-          // Allow Google One Tap popup to postMessage back to your origin
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
-          // Ensure embedder policy is not strict; use unsafe-none if you previously set COEP
-          { key: "Cross-Origin-Embedder-Policy", value: "unsafe-none" },
+          { key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' },
+          { key: 'Cross-Origin-Embedder-Policy', value: 'unsafe-none' },
         ],
       },
     ];
   },
-  reactStrictMode: true,
+
+  images: {
+    domains: ['i.scdn.co'],
+  },
 };
 
-module.exports = withPWA({
-  ...nextConfig,
-  images: {
-    domains: ["i.scdn.co"],
-  },
-});
+module.exports = withPWA(nextConfig);
