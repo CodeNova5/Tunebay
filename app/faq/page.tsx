@@ -28,7 +28,7 @@ const faqs = [
   {
     question: "How can I contact support?",
     answer:
-      "You can reach our support team via the Contact page or email us at support@example.com.",
+      "You can reach our support team via the Contact page or email us at codenova02@gmail.com.",
   },
 ];
 
