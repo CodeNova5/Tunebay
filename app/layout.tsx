@@ -1,16 +1,19 @@
-// app/layout.tsx
-import ErudaClient from './ErudaClient';
+import Script from 'next/script';
 
-export const metadata = {
-  title: 'Tunebay',
-  description: 'Stream and discover music',
-};
+export default function RootLayout({ children }) {
+  const isDev = process.env.NODE_ENV === 'development';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <ErudaClient />
+        {isDev && (
+          <>
+            <Script src="https://cdn.jsdelivr.net/npm/eruda" strategy="afterInteractive" />
+            <Script id="eruda-init" strategy="afterInteractive">
+              {`eruda.init();`}
+            </Script>
+          </>
+        )}
         {children}
       </body>
     </html>
