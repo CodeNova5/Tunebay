@@ -105,10 +105,30 @@ export default function LoginPage() {
   };
 
   const saveUserInfo = (data: any) => {
+
     localStorage.setItem('userInfo', JSON.stringify({
       data,
       provider: "google"
     }));
+
+        // Save user details to backend (name, email, image, notificationToken: null)
+        fetch('/api/Music/route?type=storeUserDetail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: getOrCreateUserId(), // Ensure you send the user ID
+                name: data.name,
+                email: data.email,
+                image: data.picture,
+            })
+        })
+            .then((res) => {
+                if (res.ok) {
+                    window.location.reload();
+                }
+            })
+            .catch(() => { });
+    };
   };
 
   return (
