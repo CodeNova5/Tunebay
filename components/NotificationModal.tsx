@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { requestNotificationPermission } from "@/utils/requestPermission";
+import { getToken } from "firebase/messaging";
+import { messaging } from "@/lib/firebase";
 import { Bell, X } from "lucide-react";
-import { getOrCreateUserId } from "@/utils/generateUserId"; // adjust path if needed
+import { getOrCreateUserId } from "@/utils/generateUserId";
 
 export default function NotificationModal() {
   const [show, setShow] = useState(false);
@@ -12,19 +14,55 @@ export default function NotificationModal() {
   const [granted, setGranted] = useState(false);
 
   useEffect(() => {
-    // Only show if permission hasn’t been granted yet
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+
+    const checkPermissionAndToken = async () => {
       const currentPermission = Notification.permission;
+
       if (currentPermission === "default") {
+        // Not yet granted → show modal
         setShow(true);
       } else if (currentPermission === "granted") {
+        // Already granted → get token and ensure it's in DB
         setGranted(true);
         setShow(false);
+
+        try {
+          const token = await getToken(messaging, {
+            vapidKey: "BEvnsPzvqGc4nrfwtMGILhEQzBNQ5zAtIn7gLQuT48Ix6RJdbWbisZYOz0AeRV7Wc0L6hsn0JlfAPUk63xyM_AA",
+          });
+
+          if (token) {
+            const userId = getOrCreateUserId();
+
+            // Check if token exists in DB
+            const res = await fetch("/api/Music/route?type=checkUserToken", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, notificationToken: token }),
+            });
+
+            const data = await res.json();
+
+            // If token not in DB → add it
+            if (!data.exists) {
+              await fetch("/api/Music/route?type=storeUserDetail", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, notificationToken: token }),
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Error verifying notification token:", err);
+        }
       } else {
         // permission = "denied"
         setShow(false);
       }
-    }
+    };
+
+    checkPermissionAndToken();
   }, []);
 
   const handleEnable = async () => {
@@ -34,17 +72,13 @@ export default function NotificationModal() {
 
     if (token) {
       setGranted(true);
-      setTimeout(() => setShow(false), 1800); // close smoothly
-      getOrCreateUserId();
+      setTimeout(() => setShow(false), 1800);
+      const userId = getOrCreateUserId();
 
-      // Send the token to your backend to store it
-      await fetch('/api/Music/route?type=storeUserDetail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            userId: getOrCreateUserId(), // Ensure you send the user ID
-            notificationToken: token // <-- pass the token here
-        })
+      await fetch("/api/Music/route?type=storeUserDetail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, notificationToken: token }),
       });
     }
   };
@@ -63,9 +97,8 @@ export default function NotificationModal() {
             initial={{ scale: 0.8, opacity: 0, y: 40 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', duration: 0.5 }}
+            transition={{ type: "spring", duration: 0.5 }}
           >
-            {/* Close button */}
             <button
               onClick={() => setShow(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
@@ -73,17 +106,15 @@ export default function NotificationModal() {
               <X size={20} />
             </button>
 
-            {/* Icon */}
             <motion.div
               initial={{ rotate: -10, scale: 0.8 }}
               animate={{ rotate: 0, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
+              transition={{ type: "spring", stiffness: 200 }}
               className="mx-auto mb-4 bg-green-500/10 border border-green-500/30 rounded-full p-3 w-fit"
             >
               <Bell className="text-green-500" size={36} />
             </motion.div>
 
-            {/* Text */}
             <h2 className="text-xl font-semibold text-white mb-2">
               Stay in the Loop 🎵
             </h2>
@@ -91,7 +122,6 @@ export default function NotificationModal() {
               Enable notifications to get updates when new songs, albums, or artist drops hit Tunebay.
             </p>
 
-            {/* Button / Feedback */}
             {!granted ? (
               <button
                 onClick={handleEnable}
