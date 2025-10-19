@@ -27,35 +27,41 @@ export default function NotificationModal() {
         setGranted(true);
         setShow(false);
 
-        try {
-          const token = await getToken(messaging, {
-            vapidKey: "BEvnsPzvqGc4nrfwtMGILhEQzBNQ5zAtIn7gLQuT48Ix6RJdbWbisZYOz0AeRV7Wc0L6hsn0JlfAPUk63xyM_AA",
-          });
+  try {
+  if (!messaging) {
+    console.warn("Firebase messaging not initialized.");
+    return;
+  }
 
-          if (token) {
-            const userId = getOrCreateUserId();
+  const token = await getToken(messaging, {
+    vapidKey:
+      "BEvnsPzvqGc4nrfwtMGILhEQzBNQ5zAtIn7gLQuT48Ix6RJdbWbisZYOz0AeRV7Wc0L6hsn0JlfAPUk63xyM_AA",
+  });
 
-            // Check if token exists in DB
-            const res = await fetch("/api/Music/route?type=checkUserToken", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId, notificationToken: token }),
-            });
+  if (token) {
+    const userId = getOrCreateUserId();
 
-            const data = await res.json();
+    // Check if token exists in DB
+    const res = await fetch("/api/Music/route?type=checkUserToken", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, notificationToken: token }),
+    });
 
-            // If token not in DB → add it
-            if (!data.exists) {
-              await fetch("/api/Music/route?type=storeUserDetail", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId, notificationToken: token }),
-              });
-            }
-          }
-        } catch (err) {
-          console.error("Error verifying notification token:", err);
-        }
+    const data = await res.json();
+
+    if (!data.exists) {
+      await fetch("/api/Music/route?type=storeUserDetail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, notificationToken: token }),
+      });
+    }
+  }
+} catch (err) {
+  console.error("Error verifying notification token:", err);
+}
+
       } else {
         // permission = "denied"
         setShow(false);
