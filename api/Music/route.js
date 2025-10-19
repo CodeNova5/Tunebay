@@ -263,6 +263,29 @@ export default async function handler(req, res) {
       const json = await response.json();
       return res.status(200).json(json);
     }
+else if (type === "checkUserToken") {
+  const { userId, notificationToken } = req.body;
+
+  if (!userId || !notificationToken) {
+    return res.status(400).json({ error: "Missing userId or notificationToken" });
+  }
+
+  try {
+    await connectDB();
+
+    // Check if user exists and has the same token stored
+    const user = await UserDetail.findOne({ userId, notificationToken });
+
+    if (user) {
+      return res.status(200).json({ exists: true });
+    } else {
+      return res.status(200).json({ exists: false });
+    }
+  } catch (err) {
+    console.error("MongoDB Error:", err);
+    return res.status(500).json({ error: "Failed to check token" });
+  }
+}
 
     else if (type === "storeUserDetail") {
       const { name, email, image, notificationToken, userId } = req.body;
