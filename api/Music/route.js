@@ -277,8 +277,10 @@ else if (type === "checkUserToken") {
     const user = await UserDetail.findOne({ userId, notificationToken });
 
     if (user) {
+      console.log("Token already exists");
       return res.status(200).json({ exists: true });
     } else {
+      console.log("Token Doesn't Exist");
       return res.status(200).json({ exists: false });
     }
   } catch (err) {
