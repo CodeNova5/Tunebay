@@ -263,31 +263,31 @@ export default async function handler(req, res) {
       const json = await response.json();
       return res.status(200).json(json);
     }
-else if (type === "checkUserToken") {
-  const { userId, notificationToken } = req.body;
+    else if (type === "checkUserToken") {
+      const { userId, notificationToken } = req.body;
 
-  if (!userId || !notificationToken) {
-    return res.status(400).json({ error: "Missing userId or notificationToken" });
-  }
+      if (!userId || !notificationToken) {
+        return res.status(400).json({ error: "Missing userId or notificationToken" });
+      }
 
-  try {
-    await connectDB();
+      try {
+        await connectDB();
 
-    // Check if user exists and has the same token stored
-    const user = await UserDetail.findOne({ userId, notificationToken });
+        // Check if user exists and has the same token stored
+        const user = await UserDetail.findOne({ userId, notificationToken });
 
-    if (user) {
-      console.log("Token already exists");
-      return res.status(200).json({ exists: true });
-    } else {
-      console.log("Token Doesn't Exist");
-      return res.status(200).json({ exists: false });
+        if (user) {
+          console.log("Token already exists");
+          return res.status(200).json({ exists: true });
+        } else {
+          console.log("Token Doesn't Exist");
+          return res.status(200).json({ exists: false });
+        }
+      } catch (err) {
+        console.error("MongoDB Error:", err);
+        return res.status(500).json({ error: "Failed to check token" });
+      }
     }
-  } catch (err) {
-    console.error("MongoDB Error:", err);
-    return res.status(500).json({ error: "Failed to check token" });
-  }
-}
 
     else if (type === "storeUserDetail") {
       const { name, email, image, notificationToken, userId } = req.body;
@@ -569,11 +569,16 @@ else if (type === "checkUserToken") {
 
 
     else if (type === "lyrics") {
+      const { artistName, songName } = req.query;
+
       if (!artistName || !songName) {
         return res.status(400).json({ error: "Missing artist name or song name" });
       }
 
       try {
+        const decodedArtistName = decodeURIComponent(artistName);
+        const decodedSongName = decodeURIComponent(songName);
+
         // 1️⃣ Try Lyrics.ovh API first
         const lyricsApiUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(decodedArtistName)}/${encodeURIComponent(decodedSongName)}`;
         const response = await fetch(lyricsApiUrl);
@@ -588,7 +593,10 @@ else if (type === "checkUserToken") {
         const lyricsData = await getLyrics(decodedArtistName, decodedSongName);
         if (lyricsData && lyricsData.lyrics) {
           res.setHeader("Cache-Control", "public, s-maxage=31536000, immutable");
-          return res.status(200).json({ lyrics: lyricsData.lyrics, url: lyricsData.url });
+          return res.status(200).json({
+            lyrics: lyricsData.lyrics,
+            url: lyricsData.url,
+          });
         }
 
         return res.status(404).json({ error: "Lyrics not found" });
