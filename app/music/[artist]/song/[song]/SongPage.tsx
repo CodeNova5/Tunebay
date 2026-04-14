@@ -2,17 +2,397 @@
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import '@fortawesome/fontawesome-free/css/all.min.css';
 import { ID3Writer } from 'browser-id3-writer';
 import CommentShareModule from '@/components/CommentShareModule'
 import Header from '@/components/Header'
 import Footer from "@/components/Footer";
-import 'react-h5-audio-player/lib/styles.css';
 import AudioPlayer from 'react-h5-audio-player';
-import './audioPlayerStyles.css';
-import RedirectModal from "@/components/RedirectModal";
-import { SMART_LINK } from "@/config";
 import { getOrCreateUserId } from "@/utils/generateUserId"; // adjust path if needed
+
+const styles = `
+  .song-page {
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+    min-height: 100vh;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  .song-header {
+    background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+    padding: 2rem;
+    text-align: center;
+    border-radius: 16px;
+    margin: 2rem;
+    box-shadow: 0 8px 32px rgba(29, 185, 84, 0.3);
+  }
+
+  .song-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 3rem 2rem;
+  }
+
+  .song-cover {
+    width: 280px;
+    height: 280px;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+    object-fit: cover;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .song-cover:hover {
+    transform: scale(1.02);
+    box-shadow: 0 16px 64px rgba(29, 185, 84, 0.4);
+  }
+
+  .song-info {
+    text-align: center;
+  }
+
+  .song-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 1rem 0;
+    background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .song-artist {
+    font-size: 1.25rem;
+    color: #b3b3b3;
+    margin: 0.5rem 0;
+    font-weight: 500;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 3rem 2rem;
+  }
+
+  .detail-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .detail-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(29, 185, 84, 0.5);
+    transform: translateY(-4px);
+  }
+
+  .detail-label {
+    color: #b3b3b3;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .detail-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1ed760;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 2rem;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+    color: #000;
+    box-shadow: 0 4px 16px rgba(29, 185, 84, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(29, 185, 84, 0.5);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(29, 185, 84, 0.5);
+    color: #1ed760;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(29, 185, 84, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 3rem 2rem 1.5rem;
+    position: relative;
+    padding-left: 1rem;
+  }
+
+  .section-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 1.2em;
+    background: linear-gradient(180deg, #1db954 0%, #1ed760 100%);
+    border-radius: 2px;
+  }
+
+  .scroll-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+    scroll-behavior: smooth;
+  }
+
+  .scroll-container::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .scroll-container::-webkit-scrollbar-thumb {
+    background: #1db954;
+    border-radius: 3px;
+  }
+
+  .song-card {
+    min-width: 140px;
+    max-width: 140px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .song-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(29, 185, 84, 0.5);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 32px rgba(29, 185, 84, 0.2);
+  }
+
+  .song-card-image {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    transition: transform 0.3s ease;
+  }
+
+  .song-card:hover .song-card-image {
+    transform: scale(1.05);
+  }
+
+  .song-card-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .song-card-artist {
+    font-size: 0.75rem;
+    color: #b3b3b3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
+
+  .video-container {
+    margin: 3rem 2rem;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .video-container iframe {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: none;
+  }
+
+  .player-container {
+    margin: 3rem 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .player-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .lyrics-container {
+    margin: 3rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .lyrics-content {
+    line-height: 2;
+    color: #d0d0d0;
+  }
+
+  .lyrics-section {
+    color: #1ed760;
+    margin: 1rem 0;
+    font-weight: 600;
+  }
+
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    gap: 0.5rem;
+  }
+
+  .loading-bar {
+    width: 3px;
+    height: 24px;
+    background: linear-gradient(180deg, #1db954 0%, #1ed760 100%);
+    border-radius: 2px;
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+
+  .loading-bar:nth-child(1) { animation-delay: 0s; }
+  .loading-bar:nth-child(2) { animation-delay: 0.1s; }
+  .loading-bar:nth-child(3) { animation-delay: 0.2s; }
+  .loading-bar:nth-child(4) { animation-delay: 0.3s; }
+
+  @keyframes pulse {
+    0%, 100% { height: 24px; opacity: 0.6; }
+    50% { height: 48px; opacity: 1; }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: rgba(30, 30, 30, 0.95);
+    padding: 2rem;
+    border-radius: 16px;
+    text-align: center;
+    border: 1px solid rgba(29, 185, 84, 0.3);
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  @media (max-width: 768px) {
+    .song-title {
+      font-size: 1.75rem;
+    }
+
+    .song-cover {
+      width: 200px;
+      height: 200px;
+    }
+
+    .details-grid {
+      grid-template-columns: 1fr;
+      margin: 2rem 1rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      margin: 2rem 1rem 1rem;
+    }
+
+    .button-group {
+      margin: 1.5rem 1rem;
+    }
+
+    .scroll-container {
+      padding: 1rem;
+      margin: 0 -1rem;
+      padding-left: 1rem;
+    }
+
+    .video-container {
+      margin: 2rem 1rem;
+    }
+
+    .player-container {
+      margin: 2rem 1rem;
+    }
+
+    .lyrics-container {
+      margin: 2rem 1rem;
+    }
+  }
+`;
 
 declare global {
     interface Window {
@@ -50,7 +430,7 @@ export default function SongPage() {
     const router = useRouter();
     const [googleClientId, setGoogleClientId] = React.useState<string | null>(null);
     const [userInfo, setUserInfo] = React.useState<any>(null);
-    const [showModal, setShowModal] = React.useState(false);
+    // const [showModal, setShowModal] = React.useState(false);
    
     React.useEffect(() => {
         fetch('/api/Music/route?type=clientId')
@@ -190,6 +570,9 @@ export default function SongPage() {
                     return;
                 }
                 const trackData = await response.json();
+                console.log("Song Track Data:", trackData);
+                console.log("Artists from API:", trackData.artists?.map((a: any) => a.name));
+                console.log("URL Artist Param:", artist);
                 setTrack(trackData);
 
                 // Fetch YouTube video
@@ -417,40 +800,67 @@ export default function SongPage() {
     };
     // Remove the invalid useEffect and handle "song not found" in the render logic below.
     const decodedArtist = decodeURIComponent(artist);
-    const songNotFound =
+    
+    // Helper function to normalize artist names for comparison
+    const normalizeArtistName = (name: string): string => {
+        return name
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s]/g, '') // Remove special characters
+            .replace(/\s+/g, ' '); // Normalize spaces
+    };
+    
+    const artistMismatch = 
         track &&
         decodedArtist &&
-        !track.artists?.some((a: any) =>
-            a.name?.toLowerCase() === decodedArtist.toLowerCase()
-        );
+        !track.artists?.some((a: any) => {
+            const normalized = normalizeArtistName(a.name || '');
+            const decodedNormalized = normalizeArtistName(decodedArtist);
+            
+            // Log for debugging (can be removed later)
+            if (normalized !== decodedNormalized) {
+                console.log(`Artist mismatch - API: "${normalized}", URL: "${decodedNormalized}"`);
+            }
+            
+            return normalized === decodedNormalized;
+        });
+    
+    // Show error only if we can't find the song at all, don't block display due to artist name mismatch
+    const songNotFound = false; // Disabled - we'll show song even if artist doesn't match perfectly
 
     if (songNotFound) {
         return (
-            <div style={{ textAlign: "center", marginTop: "60px", color: "#fff" }}>
-                <h1>Song not found</h1>
-                <p>
-                    The song you are looking for does not exist for this artist.
-                </p>
-                <Link href="/" style={{
-                    color: "#1db954",
-                    textDecoration: "underline",
-                    fontWeight: "bold",
-                    fontSize: "18px"
-                }}>
-                    Return to homepage
-                </Link>
+            <div className="song-page">
+                <style>{styles}</style>
+                <Header />
+                <div style={{ textAlign: "center", marginTop: "100px", padding: "2rem" }}>
+                    <h1 style={{ fontSize: "2.5rem", fontWeight: "700", marginBottom: "1rem" }}>🎵 Song Not Found</h1>
+                    <p style={{ fontSize: "1.1rem", color: "#b3b3b3", marginBottom: "1rem" }}>
+                        The song you are looking for does not exist for artist: <strong>{decodedArtist}</strong>
+                    </p>
+                    {track?.artists && (
+                        <p style={{ fontSize: "0.95rem", color: "#888", marginBottom: "2rem" }}>
+                            Found on: <strong>{track.artists.map((a: any) => a.name).join(", ")}</strong>
+                        </p>
+                    )}
+                    <Link href="/" className="btn btn-primary" style={{ padding: "12px 32px", fontSize: "1rem" }}>
+                        ← Return to Homepage
+                    </Link>
+                </div>
+                <Footer />
             </div>
         );
     }
-    // In your component
+
     if (!track) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="flex space-x-1">
-                    <span className="w-2 h-6 bg-blue-500 animate-equalizer"></span>
-                    <span className="w-2 h-10 bg-blue-500 animate-equalizer delay-100"></span>
-                    <span className="w-2 h-8 bg-blue-500 animate-equalizer delay-200"></span>
-                    <span className="w-2 h-12 bg-blue-500 animate-equalizer delay-300"></span>
+            <div className="song-page">
+                <style>{styles}</style>
+                <div className="loading-spinner">
+                    <div className="loading-bar"></div>
+                    <div className="loading-bar"></div>
+                    <div className="loading-bar"></div>
+                    <div className="loading-bar"></div>
                 </div>
             </div>
         );
@@ -458,400 +868,242 @@ export default function SongPage() {
 
 
     return (
-        <div style={{ textAlign: "center", backgroundColor: "#111", padding: "20px", marginTop: "40px" }}>
+        <div className="song-page">
+            <style>{styles}</style>
             <Header />
-            <div style={{ fontSize: "25px", fontWeight: "bold" }}>
-                <h1>{track.name} by </h1>
-                <h2>
-                    {track.artists.map((a) => a.name).join(", ")}
-                </h2>
-            </div>
-            <img src={track.album.images[0]?.url || "/placeholder.jpg"} alt={track.name} width="300" />
 
-            {/* Song Details Table */}
-            <table style={{ margin: "20px auto", borderCollapse: "collapse", width: "80%" }}>
-                <tbody>
-                    <tr>
-                        <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Detail</th>
-                        <th style={{ border: "1px solid #ddd", padding: "8px", textAlign: "left" }}>Value</th>
-                    </tr>
-                    <tr>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>Artist(s)</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                            {track.artists.map((a) => a.name).join(", ")}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>Album</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{track.album.name}</td>
-                    </tr>
-                    <tr>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>Duration</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                            {track.duration_ms
-                                ? `${Math.floor(track.duration_ms / 60000)}:${(
-                                    (track.duration_ms % 60000) /
-                                    1000
-                                )
-                                    .toFixed(0)
-                                    .padStart(2, "0")}`
-                                : "N/A"}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>Release Date</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                            {track.album.release_date || "N/A"}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div style={{ marginTop: "20px" }}>
-                {track.artists.length > 1 ? (
-                    <div>
-                        {!showSelect ? (
-                            <button
-                                onClick={() => setShowSelect(true)}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: '#1db954',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    width: '150px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                }}
-                            >
-                                View Artists
-                            </button>
-                        ) : (
-                            <select
-                                onChange={handleSelect}
-                                defaultValue=""
-                                style={{
-                                    backgroundColor: '#1e1e1e',
-                                    color: '#fff',
-                                    marginTop: '10px',
-                                    padding: '8px',
-                                    fontSize: '14px',
-                                    borderRadius: '4px',
-                                }}
-                            >
-                                <option value="" disabled>Select an artist</option>
-                                {track.artists.map((artist, index) => (
-                                    <option key={index} value={artist.name}>
-                                        {artist.name}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
-                ) : (
-                    <Link href={`/music/${encodeURIComponent(track.artists[0].name)}`}>
-                        <h3 style={{ fontSize: "16px", margin: "10px 0", width: "150px" }}>View Artist</h3>
-                    </Link>
-                )}
-            </div>
-            <div style={{ marginTop: "20px" }}>
-                <a href={SMART_LINK} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
-                    <img
-                        src="/ad-banner.jpg"
-                        alt="Ad Banner"
-                        width="468"
-                        height="200"
-                        style={{
-
-                            borderRadius: "10px",
-                            animation: "adPulse 1.5s infinite cubic-bezier(0.4,0,0.2,1), adWobble 3s infinite linear"
-                        }}
-                    />
-                </a>
-                <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
-                    This link is sponsored
-                </p>
-                <style>
-                    {`
-                        @keyframes adPulse {
-                            0% { transform: scale(1);}
-                            50% { transform: scale(1.07);}
-                            100% { transform: scale(1);}
-                        }
-                        @keyframes adWobble {
-                            0% { filter: brightness(1) hue-rotate(0deg);}
-                            20% { filter: brightness(1.08) hue-rotate(10deg);}
-                            40% { filter: brightness(1.05) hue-rotate(-10deg);}
-                            60% { filter: brightness(1.1) hue-rotate(8deg);}
-                            80% { filter: brightness(1.05) hue-rotate(-8deg);}
-                            100% { filter: brightness(1) hue-rotate(0deg);}
-                        }
-                    `}
-                </style>
-            </div>
-            <div id="youtube-video" style={{ marginTop: "20px" }}>
-                {videoId ? (
-                    <iframe
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        allowFullScreen
-                        height="315"
-                        style={{ width: "90%" }}
-                    ></iframe>
-                ) : (
-                    <p>No video available for this song.</p>
-                )}
-            </div>
-            <div style={{ marginTop: "20px", textAlign: "center" }}>
-                <h3 style={{ fontSize: "25px", margin: "10px 0" }}>Listen to the song</h3>
-                {!downloadUrl ? (
-                    <p>Preparing audio, please wait...</p>
-                ) : (
-                    <AudioPlayer
-                        src={downloadUrl}
-                        style={{ marginTop: "20px" }}
-                    />
-                )}
-            </div>
-
-            {showModal && (
-                <RedirectModal
-                    targetUrl={SMART_LINK}
-                    onClose={() => setShowModal(false)}
-                />
+            {/* Artist Mismatch Warning */}
+            {artistMismatch && (
+                <div style={{
+                    backgroundColor: "rgba(255, 193, 7, 0.1)",
+                    border: "1px solid rgba(255, 193, 7, 0.5)",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                    margin: "1.5rem 2rem",
+                    color: "#ffc107",
+                    fontSize: "0.95rem"
+                }}>
+                    ⚠️ Note: This song was found as "{track?.artists?.map((a: any) => a.name).join(", ")}" instead of "{decodedArtist}". This might be a collaboration or alternate artist credit.
+                </div>
             )}
 
-            <a
-                onClick={async (e) => {
-                    // Ensure the filename does not have "public_comment" attached to it
-                    const cleanFileName = `${track.artists[0]?.name.replace(/ /g, "-")}_-_${track.name.replace(/ /g, "-")}.mp3`;
+            {/* Song Hero Section */}
+            <div className="song-hero">
+                <img 
+                    src={track.album.images[0]?.url || "/placeholder.jpg"} 
+                    alt={track.name} 
+                    className="song-cover"
+                />
+                <div className="song-info">
+                    <h1 className="song-title">{track.name}</h1>
+                    <p className="song-artist">
+                        {track.artists.map((a) => a.name).join(", ")}
+                    </p>
+                </div>
+            </div>
 
-                    if (!downloadUrl) {
-                        e.preventDefault();
-                        setIsUploading(true);
-                        setModalMessage("Preparing download...");
-                        const observer = new MutationObserver((mutationsList) => {
-                            mutationsList.forEach((mutation) => {
-                                if (mutation.type === 'childList') {
-                                    mutation.addedNodes.forEach((node) => {
-                                        if ((node as HTMLElement).id === 'download-link') {
-                                            (node as HTMLElement).setAttribute('download', cleanFileName);
-                                            (node as HTMLElement).click();
-                                            setModalMessage("✅ Download has started");
+            {/* Details Section */}
+            <div className="details-grid">
+                <div className="detail-card">
+                    <div className="detail-label">🎤 Artist(s)</div>
+                    <div className="detail-value">{track.artists.map((a) => a.name).join(", ")}</div>
+                </div>
+                <div className="detail-card">
+                    <div className="detail-label">💿 Album</div>
+                    <div className="detail-value">{track.album.name}</div>
+                </div>
+                <div className="detail-card">
+                    <div className="detail-label">⏱️ Duration</div>
+                    <div className="detail-value">
+                        {track.duration_ms
+                            ? `${Math.floor(track.duration_ms / 60000)}:${(
+                                (track.duration_ms % 60000) /
+                                1000
+                            )
+                                .toFixed(0)
+                                .padStart(2, "0")}`
+                            : "N/A"}
+                    </div>
+                </div>
+                <div className="detail-card">
+                    <div className="detail-label">📅 Release Date</div>
+                    <div className="detail-value">{track.album.release_date || "N/A"}</div>
+                </div>
+            </div>
 
-                                            setTimeout(() => {
-                                                setModalMessage(null);
-                                                setIsUploading(false);
-                                            }, 1000);
-                                            observer.disconnect();
-                                        }
-                                    });
-                                }
-                            });
-                        });
-                        observer.observe(document.body, { childList: true, subtree: true });
-                    }
-                    else {
-                        setModalMessage("✅ Download has started");
-                        setTimeout(() => setModalMessage(null), 2000);
-                        setIsUploading(false);
-                        const fileUrl = downloadUrl;
-                        fetch(fileUrl)
-                            .then(response => response.blob())
-                            .then(blob => {
-                                const link = document.createElement("a");
-                                link.href = URL.createObjectURL(blob);
-                                link.download = cleanFileName;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                            })
-                            .catch(console.error);
-                    }
-                    // wait a second and then show the ad modal
-                    setTimeout(() => setShowModal(true), 2000);
-                }}
-                style={{
-                    display: "inline-block",
-                    marginTop: "15px",
-                    padding: "10px 20px",
-                    backgroundColor: "#28a745",
-                    color: "#fff",
-                    borderRadius: "5px",
-                    textDecoration: "none",
-                    cursor: "pointer",
-                }}
-            >
-                🎵 Download MP3
-            </a>
-            {/* Spinner Modal */}
-            {modalMessage && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        backgroundColor: "rgba(0, 0, 0, 0.7)",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        zIndex: 1000,
+            {/* Action Buttons */}
+            <div className="button-group">
+                {track.artists.length > 1 ? (
+                    !showSelect ? (
+                        <button
+                            onClick={() => setShowSelect(true)}
+                            className="btn btn-primary"
+                        >
+                            👥 View All Artists
+                        </button>
+                    ) : (
+                        <select
+                            onChange={handleSelect}
+                            defaultValue=""
+                            style={{
+                                padding: '12px 20px',
+                                backgroundColor: 'rgba(29, 185, 84, 0.15)',
+                                color: '#1ed760',
+                                border: '2px solid #1db954',
+                                borderRadius: '24px',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <option value="" disabled>Select an artist</option>
+                            {track.artists.map((artist, index) => (
+                                <option key={index} value={artist.name}>
+                                    {artist.name}
+                                </option>
+                            ))}
+                        </select>
+                    )
+                ) : (
+                    <Link href={`/music/${encodeURIComponent(track.artists[0].name)}`} className="btn btn-secondary">
+                        👤 View Artist
+                    </Link>
+                )}
+                <a
+                    onClick={async (e) => {
+                        const cleanFileName = `${track.artists[0]?.name.replace(/ /g, "-")}_-_${track.name.replace(/ /g, "-")}.mp3`;
+                        if (!downloadUrl) {
+                            e.preventDefault();
+                            setIsUploading(true);
+                            setModalMessage("⏳ Preparing download...");
+                        } else {
+                            setModalMessage("✅ Download has started");
+                            setTimeout(() => setModalMessage(null), 2000);
+                            setIsUploading(false);
+                            const fileUrl = downloadUrl;
+                            fetch(fileUrl)
+                                .then(response => response.blob())
+                                .then(blob => {
+                                    const link = document.createElement("a");
+                                    link.href = URL.createObjectURL(blob);
+                                    link.download = cleanFileName;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                })
+                                .catch(console.error);
+                        }
                     }}
+                    className="btn btn-primary"
+                    style={{ cursor: 'pointer' }}
                 >
-                    <div
-                        style={{
-                            backgroundColor: "#1e1e1e",
-                            padding: "20px",
-                            borderRadius: "8px",
-                            textAlign: "center",
-                            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.6)",
-                            color: "#fff",
-                        }}
-                    >
-                        <p style={{ fontSize: "18px", fontWeight: "bold" }}>{modalMessage}</p>
+                    ⬇️ Download MP3
+                </a>
+            </div>
+
+            {/* Video Section */}
+            {videoId && (
+                <div>
+                    <h2 className="section-title">🎬 Official Video</h2>
+                    <div className="video-container">
+                        <iframe
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            allowFullScreen
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        ></iframe>
                     </div>
                 </div>
             )}
-            <CommentShareModule track={track} album={undefined} artist={undefined} playlist={undefined} />
-            <a
-                href={SMART_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                    display: 'inline-block',
-                    padding: '12px 24px',
-                    backgroundColor: '#ff5722',
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                    transition: 'background 0.3s',
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e64a19')}
-                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ff5722')}
-            >
-                ✅ Check Out This Offer (Ad)
-            </a>
 
-            <p style={{ fontSize: '12px', color: '#555', marginTop: '8px' }}>
-                This link is sponsored
-            </p>
+            {/* Audio Player */}
+            <div>
+                <h2 className="section-title">🎵 Listen Now</h2>
+                <div className="player-container">
+                    {!downloadUrl ? (
+                        <p className="player-title">⏳ Preparing audio, please wait...</p>
+                    ) : (
+                        <AudioPlayer
+                            src={downloadUrl}
+                            style={{ borderRadius: "8px" }}
+                        />
+                    )}
+                </div>
+            </div>
 
             {/* Lyrics Section */}
-            <div id="lyrics-container" style={{ marginTop: "20px", textAlign: "left" }}>
-                <h2 style={{ fontSize: "25px", margin: "10px 0" }} >Lyrics</h2>
-                <div dangerouslySetInnerHTML={{ __html: lyricsHtml }} />
+            <div>
+                <h2 className="section-title">📝 Lyrics</h2>
+                <div className="lyrics-container">
+                    <div className="lyrics-content" dangerouslySetInnerHTML={{ __html: lyricsHtml }} />
+                </div>
             </div>
-            <h1>Songs by {track.artists[0]?.name}</h1>
-            <div
-                style={{
-                    display: "flex",
-                    overflowX: "auto",
-                    gap: "16px",
-                    borderRadius: "10px",
 
-                }}
-            >
-                {songs.map((song, index) => (
-                    <div
-                        key={index}
-                        style={{
-                            minWidth: "120px",
-                            maxWidth: "120px",
-                            background: "#232323",
-                            textAlign: "center",
-                            border: "1px solid #222",
-                            borderRadius: "10px",
-                            padding: "10px 8px",
-                            boxSizing: "border-box",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
-                            transition: "transform 0.15s",
-                        }}
-                    >
-                        <Link href={`/music/${encodeURIComponent(song.artists[0]?.name)}/song/${encodeURIComponent(song.name)}`}>
-                            <img
-                                src={song.albumImage || "/placeholder.jpg"}
-                                alt={song.name}
-                                style={{
-                                    width: "100px",
-                                    height: "100px",
-                                    objectFit: "cover",
-                                    borderRadius: "8px",
-                                    marginBottom: "8px",
-                                    border: "1px solid #333",
-                                }}
-                            />
-                            <h3 style={{
-                                fontSize: "13px",
-                                margin: "0 0 4px",
-                                color: "#fff",
-                                fontWeight: 600,
-                                overflow: "hidden",
-                                wordWrap: "break-word",
-                                overflowWrap: "break-word",
-                                whiteSpace: "normal",
-                            }}>
-                                {song.name}
-                            </h3>
-                            <p style={{
-                                fontSize: "11px",
-                                color: "#b3b3b3",
-                                margin: 0,
-                                overflow: "hidden",
-                                wordWrap: "break-word",
-                                overflowWrap: "break-word",
-                                whiteSpace: "normal",
-                            }}>
-                                {song.artists.map((a: any) => a.name).join(", ")}
-                            </p>
-                        </Link>
-                    </div>
-                ))}
-            </div>
-            {/* Related Tracks Section */}
-            <h1>Related Tracks</h1>
-            <div
-                style={{
-                    display: "flex",
-                    overflowX: "auto",
-                    gap: "20px",
-                    padding: "10px",
-                }}
-            >
-                {relatedSongs.length > 0 ? (
-                    relatedSongs.map((song, index) => (
-                        <div
-                            key={index}
-                            style={{
-                                minWidth: "120px",
-                                maxWidth: "120px",
-                                background: "#232323",
-                                textAlign: "center",
-                                border: "1px solid #222",
-                                borderRadius: "10px",
-                                padding: "10px 8px",
-                                boxSizing: "border-box",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
-                                transition: "transform 0.15s",
-                            }}
-                        >
-                            <Link href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.name)}`}>
-                                <a style={{ textDecoration: "none", color: "inherit" }}>
-                                    <img
-                                        src={song.image || "/placeholder.jpg"}
-                                        alt={song.name}
-                                        style={{ width: "100%", borderRadius: "8px" }}
-                                    />
-                                    <h3 style={{ fontSize: "16px", margin: "10px 0" }}>{song.name}</h3>
-                                    <p style={{ fontSize: "14px", color: "#888" }}>{song.artist}</p>
-                                </a>
+            {/* Songs by Artist */}
+            {songs.length > 0 && (
+                <div>
+                    <h2 className="section-title">🎶 More from {track.artists[0]?.name}</h2>
+                    <div className="scroll-container">
+                        {songs.map((song, index) => (
+                            <Link 
+                                key={index}
+                                href={`/music/${encodeURIComponent(song.artists[0]?.name)}/song/${encodeURIComponent(song.name)}`}
+                                className="song-card"
+                            >
+                                <img
+                                    src={song.albumImage || "/placeholder.jpg"}
+                                    alt={song.name}
+                                    className="song-card-image"
+                                />
+                                <h3 className="song-card-title">{song.name}</h3>
+                                <p className="song-card-artist">
+                                    {song.artists.map((a: any) => a.name).join(", ")}
+                                </p>
                             </Link>
-                        </div>
-                    ))
-                ) : (
-                    <p>No related tracks found.</p>
-                )}
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Related Tracks */}
+            {relatedSongs.length > 0 && (
+                <div>
+                    <h2 className="section-title">🔗 Related Tracks</h2>
+                    <div className="scroll-container">
+                        {relatedSongs.map((song, index) => (
+                            <Link 
+                                key={index}
+                                href={`/music/${encodeURIComponent(song.artist)}/song/${encodeURIComponent(song.name)}`}
+                                className="song-card"
+                            >
+                                <img
+                                    src={song.image || "/placeholder.jpg"}
+                                    alt={song.name}
+                                    className="song-card-image"
+                                />
+                                <h3 className="song-card-title">{song.name}</h3>
+                                <p className="song-card-artist">{song.artist}</p>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Comments Section */}
+            <div style={{ margin: "3rem 2rem" }}>
+                <h2 className="section-title">💬 Comments & Shares</h2>
+                <CommentShareModule track={track} album={undefined} artist={undefined} playlist={undefined} />
             </div>
+
+            {/* Modal */}
+            {modalMessage && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <p className="modal-text">{modalMessage}</p>
+                    </div>
+                </div>
+            )}
+
             <Footer />
         </div>
     );
