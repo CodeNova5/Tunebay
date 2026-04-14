@@ -173,20 +173,27 @@ const styles = `
     gap: 1.5rem;
     padding: 1.5rem 2rem;
     scroll-behavior: smooth;
+    margin: 0 -2rem;
+    padding-left: 2rem;
   }
 
   .scroll-container::-webkit-scrollbar {
-    height: 6px;
+    height: 8px;
   }
 
   .scroll-container::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    border-radius: 4px;
+    margin: 0 2rem;
   }
 
   .scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(29, 185, 84, 0.6);
+    border-radius: 4px;
+  }
+
+  .scroll-container::-webkit-scrollbar-thumb:hover {
     background: #1db954;
-    border-radius: 3px;
   }
 
   .song-card {
@@ -258,16 +265,49 @@ const styles = `
   .player-container {
     margin: 3rem 2rem;
     background: rgba(255, 255, 255, 0.05);
-    padding: 2rem;
+    padding: 2.5rem;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+  }
+
+  .player-container :global(.rhap_container) {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 12px;
+  }
+
+  .player-container :global(.rhap_progress-section) {
+    padding: 0.75rem 0;
+  }
+
+  .player-container :global(.rhap_controls-section) {
+    gap: 0.75rem;
+  }
+
+  .player-container :global(.rhap_time-section) {
+    color: #b3b3b3;
+    font-size: 0.9rem;
   }
 
   .player-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
     text-align: center;
+    color: #b3b3b3;
+  }
+
+  .section-wrapper {
+    margin: 3rem 2rem;
+  }
+
+  .section-wrapper .section-title {
+    margin: 0 0 1.5rem 0;
+  }
+
+  .section-wrapper > div:not(.section-title) {
+    border-radius: 12px;
   }
 
   .lyrics-container {
@@ -375,7 +415,7 @@ const styles = `
     }
 
     .scroll-container {
-      padding: 1rem;
+      padding: 1.5rem 1rem;
       margin: 0 -1rem;
       padding-left: 1rem;
     }
@@ -386,10 +426,19 @@ const styles = `
 
     .player-container {
       margin: 2rem 1rem;
+      padding: 1.5rem;
     }
 
     .lyrics-container {
       margin: 2rem 1rem;
+    }
+
+    .section-wrapper {
+      margin: 2rem 1rem;
+    }
+
+    .section-wrapper .section-title {
+      margin: 0 0 1rem 0;
     }
   }
 `;
@@ -1017,7 +1066,7 @@ export default function SongPage() {
             )}
 
             {/* Audio Player */}
-            <div>
+            <div className="section-wrapper">
                 <h2 className="section-title">🎵 Listen Now</h2>
                 <div className="player-container">
                     {!downloadUrl ? (
@@ -1041,7 +1090,7 @@ export default function SongPage() {
 
             {/* Songs by Artist */}
             {songs.length > 0 && (
-                <div>
+                <div className="section-wrapper">
                     <h2 className="section-title">🎶 More from {track.artists[0]?.name}</h2>
                     <div className="scroll-container">
                         {songs.map((song, index) => (
@@ -1067,7 +1116,7 @@ export default function SongPage() {
 
             {/* Related Tracks */}
             {relatedSongs.length > 0 && (
-                <div>
+                <div className="section-wrapper">
                     <h2 className="section-title">🔗 Related Tracks</h2>
                     <div className="scroll-container">
                         {relatedSongs.map((song, index) => (
@@ -1090,7 +1139,7 @@ export default function SongPage() {
             )}
 
             {/* Comments Section */}
-            <div style={{ margin: "3rem 2rem" }}>
+            <div className="section-wrapper">
                 <h2 className="section-title">💬 Comments & Shares</h2>
                 <CommentShareModule track={track} album={undefined} artist={undefined} playlist={undefined} />
             </div>
