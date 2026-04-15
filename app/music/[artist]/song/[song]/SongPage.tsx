@@ -254,6 +254,9 @@ const styles = `
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .video-container iframe {
@@ -264,38 +267,51 @@ const styles = `
 
   .player-container {
     margin: 3rem 2rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(135deg, rgba(29, 185, 84, 0.1) 0%, rgba(30, 215, 96, 0.05) 100%);
     padding: 2.5rem;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1.5px solid rgba(29, 185, 84, 0.3);
     backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(29, 185, 84, 0.1);
   }
 
   .player-container :global(.rhap_container) {
     background: transparent !important;
     box-shadow: none !important;
     border-radius: 12px;
+    padding: 1rem !important;
   }
 
   .player-container :global(.rhap_progress-section) {
-    padding: 0.75rem 0;
+    padding: 1rem 0;
   }
 
   .player-container :global(.rhap_controls-section) {
-    gap: 0.75rem;
+    gap: 1.5rem;
+    justify-content: center;
   }
 
   .player-container :global(.rhap_time-section) {
     color: #b3b3b3;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .player-container :global(.rhap_button) {
+    color: #1ed760 !important;
+    font-size: 1.2rem !important;
+  }
+
+  .player-container :global(.rhap_button:hover) {
+    color: #22ff7f !important;
   }
 
   .player-title {
     font-size: 1.25rem;
     font-weight: 600;
-    margin: 0;
+    margin: 0 0 1.5rem 0;
     text-align: center;
-    color: #b3b3b3;
+    color: #1ed760;
   }
 
   .section-wrapper {
