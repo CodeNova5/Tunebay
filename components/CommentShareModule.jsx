@@ -85,7 +85,6 @@ React.useEffect(() => {
   return (
     <>
       <div style={styles.container}>
-        <h2 style={styles.heading}>Comment and Share</h2>
         <div style={styles.iconRow}>
           <button onClick={toggleModal} aria-label={isModalOpen ? 'Close Comments' : 'Open Comments'} style={styles.iconBtn}>
             <i className="fas fa-comments" style={styles.icon}></i>

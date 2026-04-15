@@ -21,6 +21,8 @@ const CommentSection = () => {
   const [formattedComments, setFormattedComments] = useState([]);
   const [editingComment, setEditingComment] = useState(null);
   const [editContent, setEditContent] = useState("");
+  const [loadingActions, setLoadingActions] = useState({}); // Track individual action states
+  const [deletingIds, setDeletingIds] = useState(new Set()); // Track deleting comment IDs
 
   // Function to format the time ago
   const formatTimeAgo = (date) => {
@@ -66,8 +68,14 @@ const CommentSection = () => {
   }, [page, pageUrl, limit]);
 
   async function deleteComment(commentId) {
+    // Prevent multiple clicks
+    if (deletingIds.has(commentId)) return;
+    
     const confirmDelete = confirm("Are you sure you want to delete this comment and all its replies?");
     if (!confirmDelete) return;
+
+    // Mark as deleting
+    setDeletingIds(prev => new Set(prev).add(commentId));
 
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
@@ -89,14 +97,26 @@ const CommentSection = () => {
     } catch (error) {
       console.error('Error deleting comment:', error);
       alert(error.message);
+    } finally {
+      // Remove from deleting set
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(commentId);
+        return newSet;
+      });
     }
   }
 
   const saveEdit = async () => {
+    // Prevent multiple clicks
+    if (loadingActions[editingComment?._id]) return;
+
     if (!editContent.trim()) {
       alert("Comment cannot be empty.");
       return;
     }
+
+    setLoadingActions(prev => ({ ...prev, [editingComment._id]: true }));
 
     try {
       const response = await fetch(`/api/comments/${editingComment._id}`, {
@@ -122,6 +142,8 @@ const CommentSection = () => {
     } catch (error) {
       console.error("Error updating comment:", error);
       alert("Failed to update the comment.");
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [editingComment?._id]: false }));
     }
   };
 
@@ -280,46 +302,55 @@ const CommentSection = () => {
       modal = document.createElement('div');
       modal.id = 'reply-modal';
       modal.style.position = 'fixed';
-      modal.style.bottom = '0';  // Position at the bottom of the screen
+      modal.style.bottom = '0';
       modal.style.left = '0';
-      modal.style.width = '100%'; // Span the width horizontally
-      modal.style.background = 'black';
+      modal.style.width = '100%';
+      modal.style.background = 'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.95) 100%)';
       modal.style.color = 'white';
-      modal.style.padding = '10px'; // Adjusted padding for better fit
-      modal.style.boxShadow = '0 -2px 10px rgba(0,0,0,0.1)';
-      modal.style.zIndex = 1000;
+      modal.style.padding = '15px 20px';
+      modal.style.boxShadow = '0 -4px 20px rgba(0,0,0,0.3)';
+      modal.style.zIndex = 1002;
+      modal.style.borderTop = '1px solid #444';
+      modal.style.animation = 'slideUp 0.3s ease';
       document.body.appendChild(modal);
     }
 
+    let isSubmitting = false;
+
     modal.innerHTML = `
-  <form id="reply-form" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 1px solid #ccc;">
-    <textarea id="reply-content" type="text" placeholder="Write a reply..." style=" padding: 8px; border-radius: 20px; border: 1px solid #ccc; outline: none; height: 40px; width: 80%;"></textarea>
-    <button type="submit" style="background: none; color: white; border: none; cursor: pointer; font-size: 16px;">
+  <form id="reply-form" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0;">
+    <textarea id="reply-content" type="text" placeholder="Write a reply..." style="padding: 10px; border-radius: 8px; border: 1px solid #555; outline: none; height: 40px; width: calc(100% - 50px); background: #2c2c2c; color: #e0e0e0; transition: all 0.2s ease; font-family: inherit;"></textarea>
+    <button type="submit" style="background: none; color: white; border: none; cursor: pointer; font-size: 16px; transition: all 0.2s ease; opacity: 1;" id="reply-submit-btn">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" style="fill: #1F51FF; transform: rotate(50deg);">
         <path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480l0-83.6c0-4 1.5-7.8 4.2-10.8L331.8 202.8c5.8-6.3 5.6-16-.4-22s-15.7-6.4-22-.7L106 360.8 17.7 316.6C7.1 311.3 .3 300.7 0 288.9s5.9-22.8 16.1-28.7l448-256c10.7-6.1 23.9-5.5 34 1.4z"/>
       </svg>
     </button>
   </form>
-  <p id="reply-error" style="color: red; display: none; padding: 5px;">Error submitting reply. Please try again.</p>
+  <p id="reply-error" style="color: #ff6b6b; display: none; padding: 5px; font-size: 0.9em;">Error submitting reply. Please try again.</p>
 `;
     modal.style.display = 'block';
     showReplies(commentId); // Show replies in the modal
+
     const textarea = document.getElementById("reply-content");
+    const submitBtn = document.getElementById('reply-submit-btn');
+    const form = document.getElementById('reply-form');
+    const errorMsg = document.getElementById('reply-error');
+
     textarea.addEventListener("input", () => {
-      textarea.style.height = "auto"; // Reset height to calculate new height
-      textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on content
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 80)}px`;
     });
 
     textarea.focus();
 
-    const form = document.getElementById('reply-form');
-    const errorMsg = document.getElementById('reply-error');
     form.onsubmit = async (e) => {
       e.preventDefault();
 
+      // Prevent multiple submissions
+      if (isSubmitting) return;
+
       if (!currentUser) {
         alert("Please log in to reply.");
-
         router.push('/login');
         return;
       }
@@ -329,6 +360,10 @@ const CommentSection = () => {
         alert("Reply content cannot be empty.");
         return;
       }
+
+      isSubmitting = true;
+      submitBtn.style.opacity = '0.5';
+      submitBtn.disabled = true;
 
       const formData = {
         content: replyContent,
@@ -349,10 +384,16 @@ const CommentSection = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
-        showReplies(commentId); // Refresh the replies in the modal
-        modal.style.display = 'none';
+        document.getElementById('reply-content').value = '';
+        showReplies(commentId);
+        errorMsg.style.display = 'none';
       } catch (error) {
+        console.error('Reply error:', error);
         errorMsg.style.display = 'block';
+      } finally {
+        isSubmitting = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.disabled = false;
       }
     };
 
@@ -476,10 +517,10 @@ const CommentSection = () => {
     // Show loading indicator
     const spinner = document.getElementById('spinner');
     if (spinner) spinner.style.display = 'block';
-    modal.style.display = 'block';
+    modal.classList.add(styles.show);
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Prevent scrolling
-    modal.style.overflowY = 'scroll'; // Enable vertical scrolling
-    modal.zIndex = 1001; // Ensure modal is on top
+    modal.style.zIndex = 1001; // Ensure modal is on top
     try {
       const response = await fetch(`/api/comments/${commentId}/reply`);
       const replies = await response.json();
@@ -572,6 +613,8 @@ const CommentSection = () => {
     } catch (error) {
       modalBody.innerHTML = `<p>Error loading replies.</p>`;
       console.error('Error fetching replies:', error);
+    } finally {
+      if (spinner) spinner.style.display = 'none';
     }
   };
 
@@ -581,7 +624,11 @@ const CommentSection = () => {
     if (modal) {
       modal.style.display = "none";
     }
-    document.getElementById('replies-modal').style.display = 'none';
+    const repliesModal = document.getElementById('replies-modal');
+    if (repliesModal) {
+      repliesModal.classList.remove(styles.show);
+      repliesModal.style.display = 'none';
+    }
     document.body.style.overflow = 'auto'; // Restore scrolling
     const spinner = document.getElementById('spinner');
     if (spinner) spinner.style.display = 'none';
@@ -651,7 +698,7 @@ const CommentSection = () => {
 
         </div>
         <button type="submit" className={styles.commentSubmit} onClick={postComment} disabled={loading}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="25" height="25" style={{ fill: "#1F51FF", transform: "rotate(50deg)" }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="25" height="25" style={{ fill: loading ? "#999" : "#1F51FF", transform: "rotate(50deg)", transition: "all 0.2s ease" }}>
             <path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480l0-83.6c0-4 1.5-7.8 4.2-10.8L331.8 202.8c5.8-6.3 5.6-16-.4-22s-15.7-6.4-22-.7L106 360.8 17.7 316.6C7.1 311.3 .3 300.7 0 288.9s5.9-22.8 16.1-28.7l448-256c10.7-6.1 23.9-5.5 34 1.4z" />
           </svg>
         </button>
@@ -685,8 +732,20 @@ const CommentSection = () => {
                 </span>
                 {isOwner && (
                   <>
-                    <button className={styles.editButton} onClick={() => handleEdit(comment)}>Edit</button>
-                    <button className={styles.deleteButton} onClick={() => deleteComment(comment._id)}>Delete</button>
+                    <button 
+                      className={styles.editButton} 
+                      onClick={() => handleEdit(comment)}
+                      disabled={loadingActions[comment._id]}
+                    >
+                      {loadingActions[comment._id] ? 'Processing...' : 'Edit'}
+                    </button>
+                    <button 
+                      className={styles.deleteButton} 
+                      onClick={() => deleteComment(comment._id)}
+                      disabled={deletingIds.has(comment._id)}
+                    >
+                      {deletingIds.has(comment._id) ? 'Deleting...' : 'Delete'}
+                    </button>
                   </>
                 )}
               </div>
@@ -714,20 +773,50 @@ const CommentSection = () => {
       </div>
       {/* Edit Comment Modal */}
       {editingComment && (
-        <div className={styles.editModal}>
-          <div className={styles.editModalContent}>
-            <h3>Edit Comment</h3>
-            <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className={styles.editTextarea}></textarea>
-            <div className={styles.editButtons}>
-              <button onClick={saveEdit} className={styles.saveEditButton}>
-                Save
-              </button>
-              <button onClick={() => setEditingComment(null)} className={styles.cancelEditButton}>
-                Cancel
-              </button>
+        <>
+          <div 
+            className={styles.modalOverlay}
+            onClick={() => setEditingComment(null)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 1999,
+              animation: 'fadeIn 0.2s ease'
+            }}
+          ></div>
+          <div className={styles.editModal}>
+            <div className={styles.editModalContent}>
+              <h3>Edit Comment</h3>
+              <textarea 
+                value={editContent} 
+                onChange={(e) => setEditContent(e.target.value)} 
+                className={styles.editTextarea}
+                disabled={loadingActions[editingComment._id]}
+              ></textarea>
+              <div className={styles.editButtons}>
+                <button 
+                  onClick={saveEdit} 
+                  className={styles.saveEditButton}
+                  disabled={loadingActions[editingComment._id]}
+                >
+                  {loadingActions[editingComment._id] ? 'Saving...' : 'Save'}
+                </button>
+                <button 
+                  onClick={() => setEditingComment(null)} 
+                  className={styles.cancelEditButton}
+                  disabled={loadingActions[editingComment._id]}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
