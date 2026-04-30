@@ -57,6 +57,19 @@ export default function HomePage() {
         fetchNigerianSongs();
     }, []);
 
+    const sanitizeArtistName = (value: string) => {
+        if (!value) return "Unknown Artist";
+        return value
+            .replace(/<a\s+[^>]*>(.*?)<\/a>/gi, "$1")
+            .replace(/<[^>]+>/g, "")
+            .replace(/&amp;/gi, "&")
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'")
+            .replace(/&lt;/gi, "<")
+            .replace(/&gt;/gi, ">")
+            .trim() || "Unknown Artist";
+    };
+
 
     const SectionWrapper = ({ title, children }: { title: string; children: React.ReactNode }) => (
         <motion.section
@@ -126,7 +139,11 @@ export default function HomePage() {
                                         <Link
                                             key={i}
                                             href={`/music/${encodeURIComponent(
-                                                Array.isArray(song.artist) ? song.artist[0] : (song.artist?.split(",")[0] || song.artist)
+                                                sanitizeArtistName(
+                                                    Array.isArray(song.artist)
+                                                        ? (song.artist[0] || "")
+                                                        : (song.artist?.split(",")[0] || song.artist || "")
+                                                )
                                             )}/song/${encodeURIComponent(song.title)}`}
                                         >
                                             <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-100 transition">

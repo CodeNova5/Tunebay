@@ -139,6 +139,23 @@ async function getArtistAccessToken() {
   return artistAccessToken;
 }
 
+function sanitizeArtistName(value) {
+  if (!value || typeof value !== "string") return "Unknown Artist";
+
+  let artist = value
+    .replace(/<a\s+[^>]*>(.*?)<\/a>/gi, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .trim();
+
+  if (!artist) return "Unknown Artist";
+  return artist;
+}
+
 async function fetchWithSpotifyTokens(url, getToken1, getToken2) {
   // Try with first token
   let token = await getToken1();
@@ -1124,7 +1141,7 @@ export default async function handler(req, res) {
         // 3️⃣ Format top songs and get only 50 songs
         const topSongs = response.data.slice(0, 50).map((song) => ({
           title: song.title,
-          artist: song.artist,
+          artist: sanitizeArtistName(song.artist),
           image: song.cover,
         }));
         // promise all and get images using spotify
@@ -1153,7 +1170,11 @@ export default async function handler(req, res) {
               return { image, title: song.title, artist: song.artist };
             } catch (err) {
               console.error(`Spotify API Error for song ${song.title}:`, err);
-              return { image: song.image || "/placeholder.jpg" };
+              return {
+                image: song.image || "/placeholder.jpg",
+                title: song.title,
+                artist: sanitizeArtistName(song.artist),
+              };
             }
           })
         );
