@@ -1312,9 +1312,16 @@ export default async function handler(req, res) {
           .map(item => {
             const t = item.track;
             if (!t) return null;
+
+            const artistNames = Array.isArray(t.artists)
+              ? t.artists.map(a => a?.name).filter(Boolean)
+              : [];
+
+            if (!t.name || !artistNames.length) return null;
+
             return {
               title: t.name,
-              artist: t.artists.map(a => a.name).join(', '),
+              artist: artistNames.join(', '),
               image: t.album?.images?.[0]?.url || '/placeholder.jpg',
               url: t.external_urls?.spotify || null,
             };
