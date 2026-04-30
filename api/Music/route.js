@@ -1282,60 +1282,58 @@ export default async function handler(req, res) {
           res.setHeader("Cache-Control", "public, s-maxage=604800, stale-while-revalidate");
           return res.status(200).json(mongoCache.data);
         }
-        // Fetch Nigerian songs from Last.fm
-        const apiUrl = `http://ws.audioscrobbler.com/2.0/?method=geo.gettoptracks&country=nigeria&limit=20&api_key=${LAST_FM_API_KEY}&format=json`;
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error("Failed to fetch Nigerian songs from Last.fm");
-        }
-        const data = await response.json();
 
-        if (!data.tracks?.track?.length) {
-          return res.status(404).json({ error: "No Nigerian songs found" });
-        }
-        const nigerianSongs = data.tracks.track.map((track) => ({
-          title: track.name,
-          artist: track.artist.name,
-          url: track.url,
-        }));
+        // Use Spotify playlists (e.g., "Top 50 - Nigeria") to get country-specific charts
+        const accessToken = await getSpotifyAccessToken();
 
-        // get spotify images for each track
-        const accessToken = await getArtistAccessToken();
-        const nigerianSongsWithImages = await Promise.all(
-          nigerianSongs.map(async (song) => {
-            try {
-              const spotifyApiUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-                `${song.artist} ${song.title}`
-              )}&type=track&limit=1`;
-              const spotifyResponse = await fetch(spotifyApiUrl, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-              if (!spotifyResponse.ok) {
-                throw new Error(`Failed to fetch Spotify data for ${song.title} by ${song.artist}`);
-              }
-              const spotifyData = await spotifyResponse.json();
-              const image =
-                spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url || "/placeholder.jpg";
-              return { ...song, image };
-            } catch (err) {
-              console.error(`Spotify API Error for track ${song.title} by ${song.artist}:`, err);
-              return { ...song, image: "/placeholder.jpg" };
-            }
+        // Try searching for a known Nigeria chart playlist
+        const searchQuery = encodeURIComponent("Top 50 Nigeria");
+        const searchUrl = `https://api.spotify.com/v1/search?q=${searchQuery}&type=playlist&limit=5`;
+        const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+        if (!searchRes.ok) throw new Error("Failed to search Spotify playlists");
+        const searchData = await searchRes.json();
+
+        const playlists = searchData.playlists?.items || [];
+        if (!playlists.length) {
+          return res.status(404).json({ error: "No Nigeria chart playlists found on Spotify" });
+        }
+
+        // Prefer exact matches containing 'Nigeria' in the name, fallback to first result
+        let chosen = playlists.find(p => /nigeria/i.test(p.name)) || playlists[0];
+
+        // Fetch playlist tracks
+        const tracksUrl = `https://api.spotify.com/v1/playlists/${chosen.id}/tracks?market=NG&limit=50`;
+        const tracksRes = await fetch(tracksUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+        if (!tracksRes.ok) throw new Error("Failed to fetch playlist tracks");
+        const tracksData = await tracksRes.json();
+
+        const items = tracksData.items || [];
+        const formatted = items
+          .map(item => {
+            const t = item.track;
+            if (!t) return null;
+            return {
+              title: t.name,
+              artist: t.artists.map(a => a.name).join(', '),
+              image: t.album?.images?.[0]?.url || '/placeholder.jpg',
+              url: t.external_urls?.spotify || null,
+            };
           })
-        );
+          .filter(Boolean)
+          .slice(0, 20);
 
-        // Cache in mongodb for 7days
+        // Cache in mongodb for 7 days
         await SongCache.updateOne(
           { cacheKey },
-          { $set: { data: nigerianSongsWithImages, createdAt: new Date() } },
+          { $set: { data: formatted, createdAt: new Date() } },
           { upsert: true }
         );
 
         res.setHeader("Cache-Control", "s-maxage=604800, stale-while-revalidate");
-        return res.status(200).json(nigerianSongsWithImages);
+        return res.status(200).json(formatted);
       } catch (err) {
-        console.error("Last.fm API Error:", err);
-        return res.status(500).json({ error: "Failed to fetch Nigerian songs" });
+        console.error("Spotify Nigeria playlist error:", err);
+        return res.status(500).json({ error: "Failed to fetch Nigerian songs from Spotify" });
       }
     }
 

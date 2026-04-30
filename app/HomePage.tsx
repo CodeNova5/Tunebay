@@ -105,8 +105,8 @@ export default function HomePage() {
     );
 
     if (error) return <h1 className="text-red-400 text-center">{error}</h1>;
-    // Wait till page is fully loaded
-    if (songs.length === 0 || artists.length === 0 || NigerianSongs.length === 0) {
+    // Wait till essential data (songs + artists) is loaded; Nigerian songs may be empty after filtering
+    if (songs.length === 0 || artists.length === 0) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="flex space-x-1">
