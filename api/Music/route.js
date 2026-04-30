@@ -1298,8 +1298,13 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: "No Nigeria chart playlists found on Spotify" });
         }
 
-        // Prefer exact matches containing 'Nigeria' in the name, fallback to first result
-        let chosen = playlists.find(p => /nigeria/i.test(p.name)) || playlists[0];
+        // Filter out null/undefined items and prefer exact matches containing 'Nigeria' in the name
+        const validPlaylists = playlists.filter(p => p && p.name);
+        let chosen = validPlaylists.find(p => /nigeria/i.test(p.name)) || validPlaylists[0];
+
+        if (!chosen) {
+          return res.status(404).json({ error: "No valid Nigeria chart playlists found on Spotify" });
+        }
 
         // Fetch playlist tracks
         const tracksUrl = `https://api.spotify.com/v1/playlists/${chosen.id}/tracks?market=NG&limit=50`;
