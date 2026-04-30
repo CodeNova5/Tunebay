@@ -314,6 +314,12 @@ const styles = `
     color: #1ed760;
   }
 
+    .player-actions {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: center;
+    }
+
   .section-wrapper {
     margin: 3rem 2rem;
   }
@@ -1034,36 +1040,6 @@ export default function SongPage() {
                         👤 View Artist
                     </Link>
                 )}
-                <a
-                    onClick={async (e) => {
-                        const cleanFileName = `${track.artists[0]?.name.replace(/ /g, "-")}_-_${track.name.replace(/ /g, "-")}.mp3`;
-                        if (!downloadUrl) {
-                            e.preventDefault();
-                            setIsUploading(true);
-                            setModalMessage("⏳ Preparing download...");
-                        } else {
-                            setModalMessage("✅ Download has started");
-                            setTimeout(() => setModalMessage(null), 2000);
-                            setIsUploading(false);
-                            const fileUrl = downloadUrl;
-                            fetch(fileUrl)
-                                .then(response => response.blob())
-                                .then(blob => {
-                                    const link = document.createElement("a");
-                                    link.href = URL.createObjectURL(blob);
-                                    link.download = cleanFileName;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                })
-                                .catch(console.error);
-                        }
-                    }}
-                    className="btn btn-primary"
-                    style={{ cursor: 'pointer' }}
-                >
-                    ⬇️ Download MP3
-                </a>
             </div>
 
             {/* Video Section */}
@@ -1088,10 +1064,44 @@ export default function SongPage() {
                     {!downloadUrl ? (
                         <p className="player-title">⏳ Preparing audio, please wait...</p>
                     ) : (
-                        <AudioPlayer
-                            src={downloadUrl}
-                            style={{ borderRadius: "8px" }}
-                        />
+                        <>
+                            <AudioPlayer
+                                src={downloadUrl}
+                                style={{ borderRadius: "8px" }}
+                            />
+                            <div className="player-actions">
+                                <a
+                                    onClick={async (e) => {
+                                        const cleanFileName = `${track.artists[0]?.name.replace(/ /g, "-")}_-_${track.name.replace(/ /g, "-")}.mp3`;
+                                        if (!downloadUrl) {
+                                            e.preventDefault();
+                                            setIsUploading(true);
+                                            setModalMessage("⏳ Preparing download...");
+                                        } else {
+                                            setModalMessage("✅ Download has started");
+                                            setTimeout(() => setModalMessage(null), 2000);
+                                            setIsUploading(false);
+                                            const fileUrl = downloadUrl;
+                                            fetch(fileUrl)
+                                                .then(response => response.blob())
+                                                .then(blob => {
+                                                    const link = document.createElement("a");
+                                                    link.href = URL.createObjectURL(blob);
+                                                    link.download = cleanFileName;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                })
+                                                .catch(console.error);
+                                        }
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    ⬇️ Download MP3
+                                </a>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
