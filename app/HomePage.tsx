@@ -27,7 +27,13 @@ export default function HomePage() {
             try {
                 const res = await fetch(`/api/Music/route?type=topSongs`);
                 if (!res.ok) throw new Error("Failed to fetch songs");
-                setSongs(await res.json());
+                const data = await res.json();
+                setSongs(
+                    data.map((song: ChartItem) => ({
+                        ...song,
+                        artist: sanitizeArtistName(song.artist),
+                    }))
+                );
             } catch (err: any) {
                 setError(err.message);
             }
@@ -157,7 +163,7 @@ export default function HomePage() {
                                                         {song.title}
                                                     </span>
                                                     <span className="text-sm text-gray-400 truncate">
-                                                        {song.artist}
+                                                        {sanitizeArtistName(song.artist)}
                                                     </span>
                                                 </div>
                                             </div>
